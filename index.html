@@ -54,6 +54,7 @@ nav button{flex:1;padding:8px 0;border:0;background:none;color:var(--mut);font-s
 .kp div{background:var(--card);border:1px solid var(--bd);border-left:4px solid var(--pri);border-radius:14px;padding:12px}.kp small{color:var(--mut);display:block;font-size:12px}.kp b{font-size:16px}
 .flex{display:flex;align-items:center;gap:14px}.leg{flex:1;font-size:13px}.leg div{display:flex;justify-content:space-between;gap:6px;margin:5px 0}
 .leg i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px}
+.go{cursor:pointer}.go:active{opacity:.7}.tx.hl{background:#f59e0b33;border-radius:8px;padding-left:8px;padding-right:8px}
 </style>
 </head>
 <body>
@@ -90,7 +91,7 @@ const norm=d=>{const s=Object.assign(structuredClone(DEF),d||{});
  s.subs=Object.assign({},DEF.subs,s.subs);
  for(const k in DEF.subs)DEF.subs[k].forEach(u=>{if(!s.subs[k].includes(u)){const i=s.subs[k].indexOf('Other');i<0?s.subs[k].push(u):s.subs[k].splice(i,0,u)}});return s};
 let S;try{S=norm(JSON.parse(localStorage.getItem(K)))}catch(e){S=norm()}
-let tab='home',month=today().slice(0,7),addType='expense',flt='all',fcat='',per='month',hq='',hv='list',sp='day',jq='',jf='',jp='month',jm=true,chat=[],ex='',inst=null;
+let tab='home',month=today().slice(0,7),addType='expense',flt='all',fcat='',per='month',hq='',hv='list',sp='day',jq='',jf='',jp='month',jm=true,jedit=null,hlId=0,chat=[],ex='',inst=null;
 
 const save=()=>localStorage.setItem(K,JSON.stringify(S));
 const ad=(d,n)=>{const x=new Date(d+'T00:00:00');x.setDate(x.getDate()+n);return x.getFullYear()+'-'+pad2(x.getMonth()+1)+'-'+pad2(x.getDate())};
@@ -98,7 +99,7 @@ const wk=d=>ad(d,-((new Date(d+'T00:00:00').getDay()+6)%7));
 const fd=d=>new Date(d+'T00:00:00').toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short',year:'numeric'});
 const subLbl=c=>c==='School Fees'?'Child (who is the fee for?)':'Item (what is it for?)';
 const goAdd=t=>{addType=t;go('add')};
-const txRow=(x,d)=>`<div class=tx><div><b>${esc(x.cat)}${x.sub?' › '+esc(x.sub):''}</b><small>${x.date}${x.time?' '+x.time:''}${x.note?' · '+esc(x.note):''}</small></div><b class=${x.type==='income'?'inc':'exp'}>${x.type==='income'?'+':'−'}${fmt(x.amt)}</b>${d?`<button onclick="del(${x.id})" aria-label="Delete entry">🗑</button>`:''}</div>`;
+const txRow=(x,d)=>`<div class="tx${x.id===hlId?' hl':''}" id="e${x.id}"><div><b>${esc(x.cat)}${x.sub?' › '+esc(x.sub):''}</b><small>${x.date}${x.time?' '+x.time:''}${x.note?' · '+esc(x.note):''}</small></div><b class=${x.type==='income'?'inc':'exp'}>${x.type==='income'?'+':'−'}${fmt(x.amt)}</b>${d?`<button onclick="del(${x.id})" aria-label="Delete entry">🗑</button>`:''}</div>`;
 const num=v=>+String(v).replace(/,/g,'')||0;
 const fmt=n=>S.cur+' '+(+n).toLocaleString('en-US',{maximumFractionDigits:S.cur==='UGX'?0:2});
 const esc=s=>String(s).replace(/[&<>"']/g,c=>'&#'+c.charCodeAt(0)+';');
@@ -138,7 +139,7 @@ home(){const s=st(),T=today(),W=wk(T),at=S.tx,[my,mm]=month.split('-'),xs=f=>sum
  <div class=card><h3>📈 Last 7 days</h3><div style="color:var(--mut)"><svg viewBox="0 0 300 126" width=100%>${chart}</svg></div><p class=mut><span class=inc>■</span> Income &nbsp; <span class=exp>■</span> Expenses</p></div>
  <div class=card><h3>🍩 Where the money goes</h3>${s.exp?`<div class=flex><svg viewBox="0 0 100 100" width=120 height=120><circle cx=50 cy=50 r=42 fill=none stroke="var(--bd)" stroke-width=14 />${seg}</svg><div class=leg>${tp.map(([n,v],i)=>`<div><span><i style="background:${P[i]}"></i>${esc(n)}</span><b>${Math.round(v/s.exp*100)}%</b></div>`).join('')}</div></div>`:'<p class=mut>Nothing spent yet this month. Tap Expense above to start.</p>'}</div>
  ${s.rows.some(r=>r.l)?`<div class=card><h3>⚠️ Budget watch</h3>${s.rows.filter(r=>r.l).slice(0,6).map(r=>`<div class=cat><div><span>${esc(r.n)}</span><span>${fmt(r.sp)} / ${fmt(r.l)}</span></div>${bar(r.sp,r.l)}</div>`).join('')}</div>`:''}
- <div class=card><h3>🕒 Latest entries</h3>${at.length?at.slice().sort(byNew).slice(0,5).map(x=>txRow(x)).join(''):'<p class=mut>No entries yet.</p>'}</div>`},
+ <div class=card><h3>🕒 Latest entries</h3>${at.length?at.slice().sort(byNew).slice(0,5).map(x=>`<div class=go onclick="openEntry(${x.id})">${txRow(x)}</div>`).join(''):'<p class=mut>No entries yet.</p>'}</div>`},
 add(){return `<div class=card><div class=seg><button id=bE onclick="setType('expense')">Expense</button><button id=bI onclick="setType('income')">Income</button></div>
  <label>Amount (${S.cur})<input id=amt inputmode=decimal placeholder="0" oninput="cm(this)"></label>
  <label>Category<select id=cat onchange="subs()"></select></label>
@@ -159,16 +160,16 @@ budgets(){const bi=(k,t)=>`<label>${esc(t)}<input data-k="${esc(k)}" inputmode=d
  <div class=row><button class=btn onclick="addCat('expense')">Add expense</button><button class="btn ghost" onclick="addCat('income')">Add income</button></div></div>
  <div class=card><h3>Add an item to a category</h3><p class=mut>Examples: another child under School Fees, or a new job under Agric. It also gets its own budget box above.</p>
  <label>Category<select id=sc>${opts(S.cats.expense,'School Fees')}</select></label><label>Item name<input id=sn maxlength=30 placeholder="e.g. Hauwa Juma"></label><button class=btn onclick="addSub()">Add item</button></div>`},
-journal(){return `<div class=card><h3>📓 New journal note</h3>
+journal(){return `<div class=card><h3 id=jh>📓 New journal note</h3>
  <div class=row><label>Date<input id=jd type=date value="${today()}"></label><label>Time<input id=jt type=time value="${nowT()}"></label></div>
  <label>About<select id=jc onchange="jsubs()">${opts([['','General'],...[...new Set([...S.cats.expense,...S.cats.income])]])}</select></label>
  <label id=jsl hidden><span id=jsll></span><select id=js></select></label>
  <label>Note<textarea id=jn rows=4 placeholder="e.g. Planted maize in the north field. Paid 3 workers."></textarea></label>
- <button class=btn onclick="addNote()">Save note</button></div>
+ <button class=btn id=jb onclick="addNote()">Save note</button><button class="btn ghost" id=jx hidden onclick="cancelJ()">Cancel editing</button></div>
  <div class=card><input placeholder="🔍 Search the journal..." value="${esc(jq)}" oninput="jq=this.value;drawJ()">
  <div class=row><select onchange="jf=this.value;drawJ()">${opts([['','All topics'],...[...new Set([...S.cats.expense,...S.cats.income])]],jf)}</select>
  <select onchange="jp=this.value;drawJ()">${opts([['month','Month shown at top'],['all','All time']],jp)}</select></div>
- <label style="display:flex;gap:8px;align-items:center"><input type=checkbox style="width:auto;margin:0" ${jm?'checked':''} onchange="jm=this.checked;drawJ()"> Show money entries in the journal</label></div><div id=jl></div>`},
+ <label style="display:flex;gap:8px;align-items:center"><input type=checkbox style="width:auto;margin:0" ${jm?'checked':''} onchange="jm=this.checked;drawJ()"> Show money entries in the journal</label><p class=mut style="margin-bottom:0">Tip: tap a note or a money entry to jump to where it is in the app.</p></div><div id=jl></div>`},
 ai(){return `<div class=card><h3>🤖 Money assistant</h3><p class=mut>Ask about the month shown at the top. It works offline and uses only your own records.</p>
  <div class=chips>${['Summary','Am I over budget?','Spent today?','Forecast end of month','Where can I save?','Biggest expenses'].map(q=>`<button onclick="ask(this.textContent)">${q}</button>`).join('')}</div>
  <div class=row><input id=aq placeholder="e.g. How much did I spend on feeds?" onkeydown="if(event.key==='Enter')ask(this.value)"><button class=btn style="flex:0 0 70px;margin:4px 0 0" onclick="ask($('#aq').value)">Ask</button></div></div><div id=chat></div>`},
@@ -180,7 +181,7 @@ more(){return `<div class=card><h3>Currency</h3><select onchange="S.cur=this.val
  <div class=card><button class="btn red" onclick="wipe()">Delete all data</button></div>`}
 };
 
-function render(){$('#month').value=month;
+function render(){jedit=null;$('#month').value=month;
  document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.t===tab));
  $('#view').innerHTML=V[tab]();
  if(tab==='add')setType(addType);if(tab==='history')drawHist();if(tab==='ai')drawChat();if(tab==='journal'){jsubs();drawJ()}}
@@ -202,15 +203,29 @@ function drawSum(){const g={},lab=k=>sp==='month'?new Date(k+'-01T00:00:00').toL
 function addSub(){const c=$('#sc').value,n=$('#sn').value.trim();if(!n)return;const l=S.subs[c]=S.subs[c]||[];if(!l.includes(n)){const i=l.indexOf('Other');i<0?l.push(n):l.splice(i,0,n);save()}render()}
 // ---- Journal ----
 function jsubs(){const c=$('#jc').value,l=S.subs[c];$('#jsl').hidden=!l;$('#jsll').textContent=subLbl(c);$('#js').innerHTML=opts([['','—'],...(l||[])])}
-function addNote(){const t=$('#jn').value.trim();if(!t)return alert('Please write something first.');const c=$('#jc').value;
- S.journal.push({id:Date.now(),date:$('#jd').value||today(),time:$('#jt').value||nowT(),topic:c,sub:S.subs[c]?$('#js').value:'',text:t});save();$('#jn').value='';$('#jt').value=nowT();drawJ()}
+function addNote(){const t=$('#jn').value.trim();if(!t)return alert('Please write something first.');const c=$('#jc').value,
+ o={date:$('#jd').value||today(),time:$('#jt').value||nowT(),topic:c,sub:S.subs[c]?$('#js').value:'',text:t};
+ if(jedit){const n=S.journal.find(x=>x.id===jedit);if(n)Object.assign(n,o);resetJ()}else S.journal.push({id:Date.now(),...o});
+ save();$('#jn').value='';$('#jt').value=nowT();
+ if(jp==='month'&&!o.date.startsWith(month)){month=o.date.slice(0,7);$('#month').value=month}drawJ()}
+function resetJ(){jedit=null;$('#jh').textContent='📓 New journal note';$('#jb').textContent='Save note';$('#jx').hidden=true;$('#jd').value=today();$('#jc').value='';jsubs()}
+function cancelJ(){resetJ();$('#jn').value='';$('#jt').value=nowT()}
+function editNote(id){const n=S.journal.find(x=>x.id===id);if(!n)return;jedit=id;
+ $('#jd').value=n.date;$('#jt').value=n.time||'';$('#jc').value=n.topic||'';jsubs();$('#js').value=n.sub||'';$('#jn').value=n.text;
+ $('#jh').textContent='✏️ Edit journal note';$('#jb').textContent='Update note';$('#jx').hidden=false;scrollTo(0,0);$('#jn').focus()}
+// Tap a note: opens History with the matching entries. Tap a money entry: opens that entry in History.
+function openNote(id){const n=S.journal.find(x=>x.id===id);if(!n)return;
+ if(n.topic){fcat=n.topic;hq=n.sub||''}else{fcat='';hq=n.date}
+ flt='all';per='all';hv='list';hlId=0;tab='history';render();scrollTo(0,0)}
+function openEntry(id){fcat='';hq='';flt='all';per='all';hv='list';hlId=id;tab='history';render();
+ const e=$('#e'+id);if(e)e.scrollIntoView({block:'center'});setTimeout(()=>{hlId=0;const x=$('#e'+id);x&&x.classList.remove('hl')},3500)}
 function delNote(id){if(confirm('Delete this note?')){S.journal=S.journal.filter(n=>n.id!==id);save();drawJ()}}
 function drawJ(){const k=jq.toLowerCase(),inP=x=>jp==='all'||x.date.startsWith(month),it=[];
  S.journal.filter(n=>inP(n)&&(!jf||n.topic===jf)&&(!k||[n.text,n.topic,n.sub].join(' ').toLowerCase().includes(k))).forEach(n=>it.push({k:'n',n,d:n.date,t:n.time||''}));
  if(jm)S.tx.filter(x=>inP(x)&&(!jf||x.cat===jf)&&(!k||[x.cat,x.sub,x.note].join(' ').toLowerCase().includes(k))).forEach(x=>it.push({k:'t',n:x,d:x.date,t:x.time||''}));
  it.sort((a,b)=>(b.d+b.t).localeCompare(a.d+a.t)||b.n.id-a.n.id);let h='',last='';
  it.forEach(i=>{if(i.d!==last){last=i.d;const day=S.tx.filter(x=>x.date===i.d);h+=`<p class=mut style="margin:16px 4px 6px"><b>${fd(i.d)}</b> · In <span class=inc>${fmt(sum(day,'income'))}</span> · Out <span class=exp>${fmt(sum(day,'expense'))}</span></p>`}
-  h+=i.k==='n'?`<div class=card style="border-left:4px solid var(--warn);margin-bottom:8px"><small class=mut>📝 ${i.t} · ${esc(i.n.topic||'General')}${i.n.sub?' › '+esc(i.n.sub):''}</small><div style="white-space:pre-wrap">${esc(i.n.text)}</div><button class="btn red" style="width:auto;padding:4px 12px;font-size:13px" onclick="delNote(${i.n.id})">Delete</button></div>`:`<div class=card style="padding:2px 14px;margin-bottom:8px">${txRow(i.n)}</div>`});
+  h+=i.k==='n'?`<div class="card go" style="border-left:4px solid var(--warn);margin-bottom:8px" onclick="openNote(${i.n.id})"><small class=mut>📝 ${i.t} · ${esc(i.n.topic||'General')}${i.n.sub?' › '+esc(i.n.sub):''}</small><div style="white-space:pre-wrap;margin:4px 0 8px">${esc(i.n.text)}</div><button class="btn ghost" style="width:auto;padding:4px 12px;font-size:13px;margin-right:8px" onclick="event.stopPropagation();editNote(${i.n.id})">✏️ Edit</button><button class="btn red" style="width:auto;padding:4px 12px;font-size:13px" onclick="event.stopPropagation();delNote(${i.n.id})">Delete</button></div>`:`<div class="card go" style="padding:2px 14px;margin-bottom:8px" onclick="openEntry(${i.n.id})">${txRow(i.n)}</div>`});
  $('#jl').innerHTML=h||'<p class=mut>No journal notes here yet. Write your first note above.</p>'}
 function del(id){if(confirm('Delete this entry?')){S.tx=S.tx.filter(x=>x.id!==id);save();render()}}
 function setB(el){S.budgets[el.dataset.k]=num(el.value);save()}
