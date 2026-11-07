@@ -24,7 +24,7 @@ h3{margin:0 0 8px;font-size:16px}.mut{color:var(--mut);font-size:14px;margin:6px
 .grid b{display:block;font-size:15px}.grid span{font-size:12px;color:var(--mut)}
 .inc{color:var(--inc)}.exp{color:var(--exp)}
 label{display:block;font-size:14px;color:var(--mut);margin:10px 0}
-input,select{width:100%;margin-top:4px;padding:11px;font:inherit;border:1px solid var(--bd);border-radius:10px;background:var(--bg);color:var(--tx)}
+input,select,textarea{width:100%;margin-top:4px;padding:11px;font:inherit;border:1px solid var(--bd);border-radius:10px;background:var(--bg);color:var(--tx)}
 .btn{width:100%;padding:12px;margin-top:8px;border:0;border-radius:10px;background:var(--pri);color:var(--on);font-weight:600;font-size:16px;cursor:pointer}
 .btn.ghost{background:none;color:var(--pri);border:1px solid var(--pri)}.btn.red{background:none;color:var(--exp);border:1px solid var(--exp)}
 .seg,.row{display:flex;gap:8px}.row>*{flex:1}
@@ -38,13 +38,22 @@ input,select{width:100%;margin-top:4px;padding:11px;font:inherit;border:1px soli
 .chips{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
 .chips button{padding:7px 10px;border:1px solid var(--pri);border-radius:16px;background:none;color:var(--pri);font-size:13px}
 nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:var(--card);border-top:1px solid var(--bd);padding-bottom:env(safe-area-inset-bottom)}
-nav button{flex:1;padding:8px 0;border:0;background:none;color:var(--mut);font-size:11px}nav button span{display:block;font-size:20px}nav button.on{color:var(--pri);font-weight:700}
+nav button{flex:1;padding:8px 0;border:0;background:none;color:var(--mut);font-size:10px}nav button span{display:block;font-size:19px}nav button.on{color:var(--pri);font-weight:700}
 #fab{position:fixed;right:14px;bottom:calc(78px + env(safe-area-inset-bottom));width:50px;height:50px;border-radius:50%;border:0;background:var(--pri);color:var(--on);font-size:22px;z-index:6;box-shadow:0 2px 8px #0005}
 .mod{position:fixed;inset:0;background:#0007;display:flex;align-items:flex-end;justify-content:center;z-index:20;padding:12px}
 .cdisp{font-size:30px;text-align:right;word-break:break-all;min-height:42px;padding:4px}
 .keys{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
 .keys button{padding:14px;border:1px solid var(--bd);border-radius:10px;background:var(--bg);color:var(--tx);font-size:18px}
 .keys .op{background:var(--pri);color:var(--on)}.keys .w{grid-column:span 2}
+.hero{background:linear-gradient(135deg,#0f766e,#14532d 70%,#365314);color:#fff;border-radius:20px;padding:18px;margin-bottom:12px;box-shadow:0 6px 18px #0f766e44}
+.hero small{opacity:.85}.hero h2{margin:2px 0 0;font-size:32px;letter-spacing:-.5px}
+.pills{display:grid;grid-template-columns:1fr 1fr;gap:10px}.pills div{background:#ffffff26;border-radius:12px;padding:10px;font-size:13px}.pills b{display:block;font-size:16px}
+.qa{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}
+.qa button{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:10px 2px;color:var(--tx);font-size:12px}.qa span{display:block;font-size:22px}
+.kp{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.kp div{background:var(--card);border:1px solid var(--bd);border-left:4px solid var(--pri);border-radius:14px;padding:12px}.kp small{color:var(--mut);display:block;font-size:12px}.kp b{font-size:16px}
+.flex{display:flex;align-items:center;gap:14px}.leg{flex:1;font-size:13px}.leg div{display:flex;justify-content:space-between;gap:6px;margin:5px 0}
+.leg i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px}
 </style>
 </head>
 <body>
@@ -60,6 +69,7 @@ nav button{flex:1;padding:8px 0;border:0;background:none;color:var(--mut);font-s
 <button data-t="add" onclick="go('add')"><span>➕</span>Add</button>
 <button data-t="history" onclick="go('history')"><span>📋</span>History</button>
 <button data-t="budgets" onclick="go('budgets')"><span>🎯</span>Budgets</button>
+<button data-t="journal" onclick="go('journal')"><span>📓</span>Journal</button>
 <button data-t="ai" onclick="go('ai')"><span>🤖</span>Ask</button>
 <button data-t="more" onclick="go('more')"><span>⚙️</span>More</button>
 </nav>
@@ -67,20 +77,28 @@ nav button{flex:1;padding:8px 0;border:0;background:none;color:var(--mut);font-s
 const K='budget-pwa-v1',$=s=>document.querySelector(s),pad2=n=>String(n).padStart(2,'0');
 const today=()=>{const d=new Date();return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate())};
 const nowT=()=>{const d=new Date();return pad2(d.getHours())+':'+pad2(d.getMinutes())};
-const DEF={cur:'UGX',tx:[],budgets:{},
+const DEF={cur:'UGX',tx:[],budgets:{},journal:[],
  cats:{expense:['Food','Transport','Rent','Airtime & Data','Health','School Fees','Business','Savings','Entertainment','Sadaqa','Contributions','Debt Payment','Saloon','Agric','Other'],
  income:['Salary','Business','Farming','Gifts/Donations','Accounts Receivable (Debtors)','Savings','Other']},
- subs:{Agric:['Buying drugs','Feeds','Buying livestock/poultry','Ploughing','Weeding','Harvesting','Other']}};
+ subs:{Agric:['Buying seeds','Buying drugs','Feeds','Fungicides/insecticides','Buying livestock/poultry','Ploughing','Weeding','Harvesting','Other'],
+ 'School Fees':['Awwal Juma','Akbar Juma','Maira Juma','Other']}};
 // Adds any new categories to data saved earlier, so old entries are kept
 const norm=d=>{const s=Object.assign(structuredClone(DEF),d||{});
  for(const k in DEF.cats)DEF.cats[k].forEach(c=>s.cats[k].includes(c)||s.cats[k].push(c));
  s.cats.income=s.cats.income.filter(c=>c!=='Gift');
  s.tx.forEach(t=>{if(t.type==='income'&&t.cat==='Gift')t.cat='Gifts/Donations'});
- s.subs=Object.assign({},DEF.subs,s.subs);return s};
+ s.subs=Object.assign({},DEF.subs,s.subs);
+ for(const k in DEF.subs)DEF.subs[k].forEach(u=>{if(!s.subs[k].includes(u)){const i=s.subs[k].indexOf('Other');i<0?s.subs[k].push(u):s.subs[k].splice(i,0,u)}});return s};
 let S;try{S=norm(JSON.parse(localStorage.getItem(K)))}catch(e){S=norm()}
-let tab='home',month=today().slice(0,7),addType='expense',flt='all',fcat='',per='month',hq='',chat=[],ex='',inst=null;
+let tab='home',month=today().slice(0,7),addType='expense',flt='all',fcat='',per='month',hq='',hv='list',sp='day',jq='',jf='',jp='month',jm=true,chat=[],ex='',inst=null;
 
 const save=()=>localStorage.setItem(K,JSON.stringify(S));
+const ad=(d,n)=>{const x=new Date(d+'T00:00:00');x.setDate(x.getDate()+n);return x.getFullYear()+'-'+pad2(x.getMonth()+1)+'-'+pad2(x.getDate())};
+const wk=d=>ad(d,-((new Date(d+'T00:00:00').getDay()+6)%7));
+const fd=d=>new Date(d+'T00:00:00').toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short',year:'numeric'});
+const subLbl=c=>c==='School Fees'?'Child (who is the fee for?)':'Item (what is it for?)';
+const goAdd=t=>{addType=t;go('add')};
+const txRow=(x,d)=>`<div class=tx><div><b>${esc(x.cat)}${x.sub?' › '+esc(x.sub):''}</b><small>${x.date}${x.time?' '+x.time:''}${x.note?' · '+esc(x.note):''}</small></div><b class=${x.type==='income'?'inc':'exp'}>${x.type==='income'?'+':'−'}${fmt(x.amt)}</b>${d?`<button onclick="del(${x.id})" aria-label="Delete entry">🗑</button>`:''}</div>`;
 const num=v=>+String(v).replace(/,/g,'')||0;
 const fmt=n=>S.cur+' '+(+n).toLocaleString('en-US',{maximumFractionDigits:S.cur==='UGX'?0:2});
 const esc=s=>String(s).replace(/[&<>"']/g,c=>'&#'+c.charCodeAt(0)+';');
@@ -102,28 +120,55 @@ function st(){const t=mtx(),[y,m]=month.split('-').map(Number),days=new Date(y,m
 
 const PB='<div class=row><button class=btn onclick="doPdf(0)">⬇ Download PDF</button><button class="btn ghost" onclick="doPdf(1)">Share PDF</button></div>';
 const V={
-home(){const s=st();
- return `<div class=card><div class=grid><div><span>Income</span><b class=inc>${fmt(s.inc)}</b></div><div><span>Expenses</span><b class=exp>${fmt(s.exp)}</b></div><div><span>Balance</span><b>${fmt(s.inc-s.exp)}</b></div></div></div>
- <div class=card><h3>Total budget</h3>${s.tb?`<div class=mut>${fmt(s.exp)} of ${fmt(s.tb)} used (${Math.round(s.exp/s.tb*100)}%)</div>${bar(s.exp,s.tb)}<p class=mut>${s.tb>=s.exp?fmt(s.tb-s.exp)+' left to spend':'Over budget by '+fmt(s.exp-s.tb)}</p>`:'<p class=mut>No budget yet. Open Budgets to set a limit for each category.</p>'}</div>
- <div class=card><h3>Quick facts</h3><p class=mut>Kept: ${s.inc?Math.round((s.inc-s.exp)/s.inc*100)+'% of income':'no income recorded'}<br>Average spent per day: ${fmt(s.exp/s.now)}<br>Biggest spending: ${s.top?esc(s.top)+' ('+fmt(s.by[s.top])+')':'none yet'}<br>Entries this month: ${s.t.length}</p></div>
- <div class=card><h3>Spending by category</h3>${s.rows.length?s.rows.map(r=>`<div class=cat><div><span>${esc(r.n)}</span><span>${fmt(r.sp)}${r.l?' / '+fmt(r.l):''}</span></div>${bar(r.sp,r.l,s.exp)}</div>`).join(''):'<p class=mut>Nothing yet. Tap Add to record your first expense.</p>'}</div>
- <div class=card><h3>Report</h3><p class=mut>PDF for ${month}: summary, categories and every entry.</p>${PB}</div>`},
+home(){const s=st(),T=today(),W=wk(T),at=S.tx,[my,mm]=month.split('-'),xs=f=>sum(at.filter(f),'expense'),h=new Date().getHours(),
+ gr=h<12?'Good morning':h<17?'Good afternoon':'Good evening',ml=new Date(+my,mm-1,1).toLocaleDateString('en-US',{month:'long',year:'numeric'}),
+ C=263.9,pct=s.tb?s.exp/s.tb:0,col=pct>1?'var(--exp)':pct>.8?'var(--warn)':'var(--pri)',
+ P=['#0f766e','#f59e0b','#3b82f6','#ec4899','#8b5cf6','#ef4444','#84cc16'],cs=Object.entries(s.by).sort((a,b)=>b[1]-a[1]),tp=cs.slice(0,5),ot=cs.slice(5).reduce((a,x)=>a+x[1],0);
+ if(ot)tp.push(['Others',ot]);let cum=0;
+ const seg=tp.map(([n,v],i)=>{const l=v/s.exp*C,e=`<circle cx=50 cy=50 r=42 fill=none stroke="${P[i]}" stroke-width=14 stroke-dasharray="${l} ${C-l}" stroke-dashoffset="${-cum}" transform="rotate(-90 50 50)"/>`;cum+=l;return e}).join(''),
+ days=[...Array(7)].map((_,i)=>ad(T,i-6)),vals=days.map(d=>[sum(at.filter(x=>x.date===d),'income'),sum(at.filter(x=>x.date===d),'expense')]),mx=Math.max(1,...vals.flat()),
+ chart=days.map((d,i)=>{const x=10+i*41,[a,b]=vals[i],ha=a/mx*88,hb=b/mx*88;return `<rect x=${x} y=${100-ha} width=14 height=${ha} rx=3 fill="var(--inc)"/><rect x=${x+16} y=${100-hb} width=14 height=${hb} rx=3 fill="var(--exp)"/><text x=${x+15} y=118 text-anchor=middle font-size=10 fill=currentColor>${'SMTWTFS'[new Date(d+'T00:00:00').getDay()]}</text>`}).join('');
+ return `<div class=hero><small>${gr} 👋 · ${ml}</small><h2>${fmt(s.inc-s.exp)}</h2><small>Balance this month</small>
+ <div class=pills style="margin-top:12px"><div>▲ Income<b>${fmt(s.inc)}</b></div><div>▼ Expenses<b>${fmt(s.exp)}</b></div></div></div>
+ <div class=qa><button onclick="goAdd('expense')"><span>➖</span>Expense</button><button onclick="goAdd('income')"><span>➕</span>Income</button><button onclick="calc(1)"><span>🧮</span>Calculator</button><button onclick="doPdf(0)"><span>📄</span>PDF</button></div>
+ <div class=kp><div><small>Spent today</small><b class=exp>${fmt(xs(x=>x.date===T))}</b></div><div><small>Spent this week</small><b class=exp>${fmt(xs(x=>x.date>=W&&x.date<=T))}</b></div>
+ <div><small>Average per day</small><b>${fmt(s.exp/s.now)}</b></div><div><small>Kept from income</small><b class=inc>${s.inc?Math.round((s.inc-s.exp)/s.inc*100)+'%':'—'}</b></div></div>
+ <div class=card><h3>🎯 Budget</h3><div class=flex><svg viewBox="0 0 100 100" width=110 height=110><circle cx=50 cy=50 r=42 fill=none stroke="var(--bd)" stroke-width=10 /><circle cx=50 cy=50 r=42 fill=none stroke="${col}" stroke-width=10 stroke-linecap=round stroke-dasharray="${Math.min(1,pct)*C} ${C}" transform="rotate(-90 50 50)"/><text x=50 y=56 text-anchor=middle font-size=20 font-weight=700 fill=currentColor>${Math.round(pct*100)}%</text></svg>
+ <div class=leg>${s.tb?`<div><span>Budget</span><b>${fmt(s.tb)}</b></div><div><span>Spent</span><b class=exp>${fmt(s.exp)}</b></div><div><span>${s.tb>=s.exp?'Left':'Over by'}</span><b class="${s.tb>=s.exp?'inc':'exp'}">${fmt(Math.abs(s.tb-s.exp))}</b></div>`:'<span class=mut>No budget yet. Open Budgets and set a limit for each category.</span>'}</div></div></div>
+ <div class=card><h3>📈 Last 7 days</h3><div style="color:var(--mut)"><svg viewBox="0 0 300 126" width=100%>${chart}</svg></div><p class=mut><span class=inc>■</span> Income &nbsp; <span class=exp>■</span> Expenses</p></div>
+ <div class=card><h3>🍩 Where the money goes</h3>${s.exp?`<div class=flex><svg viewBox="0 0 100 100" width=120 height=120><circle cx=50 cy=50 r=42 fill=none stroke="var(--bd)" stroke-width=14 />${seg}</svg><div class=leg>${tp.map(([n,v],i)=>`<div><span><i style="background:${P[i]}"></i>${esc(n)}</span><b>${Math.round(v/s.exp*100)}%</b></div>`).join('')}</div></div>`:'<p class=mut>Nothing spent yet this month. Tap Expense above to start.</p>'}</div>
+ ${s.rows.some(r=>r.l)?`<div class=card><h3>⚠️ Budget watch</h3>${s.rows.filter(r=>r.l).slice(0,6).map(r=>`<div class=cat><div><span>${esc(r.n)}</span><span>${fmt(r.sp)} / ${fmt(r.l)}</span></div>${bar(r.sp,r.l)}</div>`).join('')}</div>`:''}
+ <div class=card><h3>🕒 Latest entries</h3>${at.length?at.slice().sort(byNew).slice(0,5).map(x=>txRow(x)).join(''):'<p class=mut>No entries yet.</p>'}</div>`},
 add(){return `<div class=card><div class=seg><button id=bE onclick="setType('expense')">Expense</button><button id=bI onclick="setType('income')">Income</button></div>
  <label>Amount (${S.cur})<input id=amt inputmode=decimal placeholder="0" oninput="cm(this)"></label>
  <label>Category<select id=cat onchange="subs()"></select></label>
- <label id=sl hidden>Item (what is it for?)<select id=sub></select></label>
+ <label id=sl hidden><span id=sll></span><select id=sub></select></label>
  <div class=row><label>Date<input id=date type=date value="${today()}"></label><label>Time<input id=time type=time value="${nowT()}"></label></div>
  <label>Note (optional)<input id=note maxlength=80 placeholder="e.g. Vegetables at the market"></label>
  <button class=btn onclick="addTx()">Save entry</button><p id=msg class=mut></p></div>`},
-history(){return `<div class=card><input placeholder="🔍 Search note, category, amount..." value="${esc(hq)}" oninput="hq=this.value;drawHist()">
+history(){const tg=`<div class=seg style="margin-bottom:12px"><button class="${hv==='list'?'on':''}" onclick="hv='list';render()">📋 Entries</button><button class="${hv==='sum'?'on':''}" onclick="hv='sum';render()">📊 Summary</button></div>`;
+ return tg+(hv==='sum'?`<div class=seg style="margin-bottom:12px">${[['day','Daily'],['week','Weekly'],['month','Monthly']].map(([k,t])=>`<button class="${sp===k?'on':''}" onclick="sp='${k}';render()">${t}</button>`).join('')}</div>`:
+ `<div class=card><input placeholder="🔍 Search note, category, amount..." value="${esc(hq)}" oninput="hq=this.value;drawHist()">
  <div class=row><select onchange="flt=this.value;drawHist()">${opts([['all','All types'],['expense','Expenses'],['income','Income']],flt)}</select>
  <select onchange="fcat=this.value;drawHist()">${opts([['','All categories'],...[...new Set([...S.cats.expense,...S.cats.income])]],fcat)}</select></div>
- <select onchange="per=this.value;drawHist()">${opts([['month','Month shown at top'],['all','All time']],per)}</select></div><div id=hl></div>${PB}`},
+ <select onchange="per=this.value;drawHist()">${opts([['month','Month shown at top'],['all','All time']],per)}</select></div>`)+'<div id=hl></div>'+PB},
 budgets(){const bi=(k,t)=>`<label>${esc(t)}<input data-k="${esc(k)}" inputmode=decimal value="${S.budgets[k]?(+S.budgets[k]).toLocaleString('en-US'):''}" oninput="cm(this)" onchange="setB(this)"></label>`;
  return `<div class=card><h3>Monthly limits</h3><p class=mut>Type the most you plan to spend each month. Leave empty for no limit. For Agric, set one limit for all of it, or leave it empty and set a limit for each Agric item.</p>
  ${S.cats.expense.map(c=>bi(c,c)+(S.subs[c]||[]).map(u=>bi(c+' › '+u,'↳ '+c+' › '+u)).join('')).join('')}</div>
  <div class=card><h3>Add your own category</h3><label>Name<input id=nc maxlength=24 placeholder="e.g. Church giving"></label>
- <div class=row><button class=btn onclick="addCat('expense')">Add expense</button><button class="btn ghost" onclick="addCat('income')">Add income</button></div></div>`},
+ <div class=row><button class=btn onclick="addCat('expense')">Add expense</button><button class="btn ghost" onclick="addCat('income')">Add income</button></div></div>
+ <div class=card><h3>Add an item to a category</h3><p class=mut>Examples: another child under School Fees, or a new job under Agric. It also gets its own budget box above.</p>
+ <label>Category<select id=sc>${opts(S.cats.expense,'School Fees')}</select></label><label>Item name<input id=sn maxlength=30 placeholder="e.g. Hauwa Juma"></label><button class=btn onclick="addSub()">Add item</button></div>`},
+journal(){return `<div class=card><h3>📓 New journal note</h3>
+ <div class=row><label>Date<input id=jd type=date value="${today()}"></label><label>Time<input id=jt type=time value="${nowT()}"></label></div>
+ <label>About<select id=jc onchange="jsubs()">${opts([['','General'],...[...new Set([...S.cats.expense,...S.cats.income])]])}</select></label>
+ <label id=jsl hidden><span id=jsll></span><select id=js></select></label>
+ <label>Note<textarea id=jn rows=4 placeholder="e.g. Planted maize in the north field. Paid 3 workers."></textarea></label>
+ <button class=btn onclick="addNote()">Save note</button></div>
+ <div class=card><input placeholder="🔍 Search the journal..." value="${esc(jq)}" oninput="jq=this.value;drawJ()">
+ <div class=row><select onchange="jf=this.value;drawJ()">${opts([['','All topics'],...[...new Set([...S.cats.expense,...S.cats.income])]],jf)}</select>
+ <select onchange="jp=this.value;drawJ()">${opts([['month','Month shown at top'],['all','All time']],jp)}</select></div>
+ <label style="display:flex;gap:8px;align-items:center"><input type=checkbox style="width:auto;margin:0" ${jm?'checked':''} onchange="jm=this.checked;drawJ()"> Show money entries in the journal</label></div><div id=jl></div>`},
 ai(){return `<div class=card><h3>🤖 Money assistant</h3><p class=mut>Ask about the month shown at the top. It works offline and uses only your own records.</p>
  <div class=chips>${['Summary','Am I over budget?','Spent today?','Forecast end of month','Where can I save?','Biggest expenses'].map(q=>`<button onclick="ask(this.textContent)">${q}</button>`).join('')}</div>
  <div class=row><input id=aq placeholder="e.g. How much did I spend on feeds?" onkeydown="if(event.key==='Enter')ask(this.value)"><button class=btn style="flex:0 0 70px;margin:4px 0 0" onclick="ask($('#aq').value)">Ask</button></div></div><div id=chat></div>`},
@@ -138,18 +183,35 @@ more(){return `<div class=card><h3>Currency</h3><select onchange="S.cur=this.val
 function render(){$('#month').value=month;
  document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.t===tab));
  $('#view').innerHTML=V[tab]();
- if(tab==='add')setType(addType);if(tab==='history')drawHist();if(tab==='ai')drawChat()}
+ if(tab==='add')setType(addType);if(tab==='history')drawHist();if(tab==='ai')drawChat();if(tab==='journal'){jsubs();drawJ()}}
 const go=t=>{tab=t;render();scrollTo(0,0)};
 const msg=t=>{$('#msg').textContent=t};
-function subs(){const l=S.subs[$('#cat').value];$('#sl').hidden=addType!=='expense'||!l;$('#sub').innerHTML=opts(l||[])}
+function subs(){const c=$('#cat').value,l=S.subs[c];$('#sl').hidden=addType!=='expense'||!l;$('#sll').textContent=subLbl(c);$('#sub').innerHTML=opts(l||[])}
 function setType(t){addType=t;$('#bE').classList.toggle('on',t==='expense');$('#bI').classList.toggle('on',t==='income');$('#cat').innerHTML=opts(S.cats[t]);subs()}
 function addTx(){const a=num($('#amt').value);if(!(a>0))return msg('Please type an amount above 0.');
  const c=$('#cat').value;
  S.tx.push({id:Date.now(),type:addType,amt:a,cat:c,sub:addType==='expense'&&S.subs[c]?$('#sub').value:'',date:$('#date').value||today(),time:$('#time').value||nowT(),note:$('#note').value.trim()});
  save();$('#amt').value=$('#note').value='';$('#time').value=nowT();msg('Saved ✔ You can add another entry.')}
-function drawHist(){const k=hq.toLowerCase(),k2=k.replace(/,/g,'');
+function drawHist(){if(hv==='sum')return drawSum();const k=hq.toLowerCase(),k2=k.replace(/,/g,'');
  const t=(per==='all'?S.tx:mtx()).filter(x=>{const h=[x.cat,x.sub,x.note,x.amt,x.date].join(' ').toLowerCase();return(flt==='all'||x.type===flt)&&(!fcat||x.cat===fcat)&&(!k||h.includes(k)||h.includes(k2))}).sort(byNew);
- $('#hl').innerHTML=`<div class=card><p class=mut>${t.length} entries · In ${fmt(sum(t,'income'))} · Out ${fmt(sum(t,'expense'))}</p>`+(t.length?t.map(x=>`<div class=tx><div><b>${esc(x.cat)}${x.sub?' › '+esc(x.sub):''}</b><small>${x.date}${x.time?' '+x.time:''}${x.note?' · '+esc(x.note):''}</small></div><b class=${x.type==='income'?'inc':'exp'}>${x.type==='income'?'+':'−'}${fmt(x.amt)}</b><button onclick="del(${x.id})" aria-label="Delete entry">🗑</button></div>`).join(''):'<p class=mut>No entries found.</p>')+'</div>'}
+ $('#hl').innerHTML=`<div class=card><p class=mut>${t.length} entries · In ${fmt(sum(t,'income'))} · Out ${fmt(sum(t,'expense'))}</p>`+(t.length?t.map(x=>txRow(x,1)).join(''):'<p class=mut>No entries found.</p>')+'</div>'}
+function drawSum(){const g={},lab=k=>sp==='month'?new Date(k+'-01T00:00:00').toLocaleDateString('en-GB',{month:'long',year:'numeric'}):sp==='week'?'Week: '+fd(k).replace(/ \d{4}$/,'')+' – '+fd(ad(k,6)):fd(k);
+ S.tx.forEach(x=>{const k=sp==='day'?x.date:sp==='week'?wk(x.date):x.date.slice(0,7),r=g[k]||(g[k]={i:0,o:0,n:0});r[x.type==='income'?'i':'o']+=x.amt;r.n++});
+ const ks=Object.keys(g).sort().reverse();
+ $('#hl').innerHTML=ks.length?ks.map(k=>{const r=g[k],net=r.i-r.o;return `<div class=card style="padding:10px 14px;margin-bottom:8px"><div class=tx style="border:0;padding:0"><div><b>${lab(k)}</b><small>${r.n} entries</small></div><div style="text-align:right;font-size:14px"><span class=inc>+${fmt(r.i)}</span><br><span class=exp>−${fmt(r.o)}</span><br><b style="color:${net<0?'var(--exp)':'var(--inc)'}">Net ${net<0?'−':''}${fmt(Math.abs(net))}</b></div></div></div>`}).join(''):'<p class=mut>No entries yet.</p>'}
+function addSub(){const c=$('#sc').value,n=$('#sn').value.trim();if(!n)return;const l=S.subs[c]=S.subs[c]||[];if(!l.includes(n)){const i=l.indexOf('Other');i<0?l.push(n):l.splice(i,0,n);save()}render()}
+// ---- Journal ----
+function jsubs(){const c=$('#jc').value,l=S.subs[c];$('#jsl').hidden=!l;$('#jsll').textContent=subLbl(c);$('#js').innerHTML=opts([['','—'],...(l||[])])}
+function addNote(){const t=$('#jn').value.trim();if(!t)return alert('Please write something first.');const c=$('#jc').value;
+ S.journal.push({id:Date.now(),date:$('#jd').value||today(),time:$('#jt').value||nowT(),topic:c,sub:S.subs[c]?$('#js').value:'',text:t});save();$('#jn').value='';$('#jt').value=nowT();drawJ()}
+function delNote(id){if(confirm('Delete this note?')){S.journal=S.journal.filter(n=>n.id!==id);save();drawJ()}}
+function drawJ(){const k=jq.toLowerCase(),inP=x=>jp==='all'||x.date.startsWith(month),it=[];
+ S.journal.filter(n=>inP(n)&&(!jf||n.topic===jf)&&(!k||[n.text,n.topic,n.sub].join(' ').toLowerCase().includes(k))).forEach(n=>it.push({k:'n',n,d:n.date,t:n.time||''}));
+ if(jm)S.tx.filter(x=>inP(x)&&(!jf||x.cat===jf)&&(!k||[x.cat,x.sub,x.note].join(' ').toLowerCase().includes(k))).forEach(x=>it.push({k:'t',n:x,d:x.date,t:x.time||''}));
+ it.sort((a,b)=>(b.d+b.t).localeCompare(a.d+a.t)||b.n.id-a.n.id);let h='',last='';
+ it.forEach(i=>{if(i.d!==last){last=i.d;const day=S.tx.filter(x=>x.date===i.d);h+=`<p class=mut style="margin:16px 4px 6px"><b>${fd(i.d)}</b> · In <span class=inc>${fmt(sum(day,'income'))}</span> · Out <span class=exp>${fmt(sum(day,'expense'))}</span></p>`}
+  h+=i.k==='n'?`<div class=card style="border-left:4px solid var(--warn);margin-bottom:8px"><small class=mut>📝 ${i.t} · ${esc(i.n.topic||'General')}${i.n.sub?' › '+esc(i.n.sub):''}</small><div style="white-space:pre-wrap">${esc(i.n.text)}</div><button class="btn red" style="width:auto;padding:4px 12px;font-size:13px" onclick="delNote(${i.n.id})">Delete</button></div>`:`<div class=card style="padding:2px 14px;margin-bottom:8px">${txRow(i.n)}</div>`});
+ $('#jl').innerHTML=h||'<p class=mut>No journal notes here yet. Write your first note above.</p>'}
 function del(id){if(confirm('Delete this entry?')){S.tx=S.tx.filter(x=>x.id!==id);save();render()}}
 function setB(el){S.budgets[el.dataset.k]=num(el.value);save()}
 function addCat(k){const n=$('#nc').value.trim();if(!n)return;if(!S.cats[k].includes(n)){S.cats[k].push(n);save()}render()}
