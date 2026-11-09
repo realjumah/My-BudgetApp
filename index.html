@@ -65,6 +65,9 @@ nav button{flex:1;padding:8px 0;border:0;background:none;color:var(--mut);font-s
 <div id="cdisp" class="cdisp">0</div><div id="cr" class="mut" style="text-align:right;min-height:20px"></div>
 <div class="keys" id="ck"></div>
 <div class="row"><button class="btn" onclick="useCalc()">Use as amount</button><button class="btn ghost" onclick="calc(0)">Close</button></div></div></div>
+<div id="dg" class="mod" hidden style="align-items:center;z-index:30" onclick="if(event.target===this)dgx(0)"><div class="card" style="width:100%;max-width:380px;margin:0">
+<p id="dm" style="font-size:17px;margin:6px 0 16px;white-space:pre-line"></p>
+<div class="row"><button class="btn ghost" id="dn" onclick="dgx(0)">Cancel</button><button class="btn" id="dy" onclick="dgx(1)">OK</button></div></div></div>
 <nav>
 <button data-t="home" onclick="go('home')"><span>🏠</span>Home</button>
 <button data-t="add" onclick="go('add')"><span>➕</span>Add</button>
@@ -91,15 +94,17 @@ const norm=d=>{const s=Object.assign(structuredClone(DEF),d||{});
  s.subs=Object.assign({},DEF.subs,s.subs);
  for(const k in DEF.subs)DEF.subs[k].forEach(u=>{if(!s.subs[k].includes(u)){const i=s.subs[k].indexOf('Other');i<0?s.subs[k].push(u):s.subs[k].splice(i,0,u)}});return s};
 let S;try{S=norm(JSON.parse(localStorage.getItem(K)))}catch(e){S=norm()}
-let tab='home',month=today().slice(0,7),addType='expense',flt='all',fcat='',per='month',hq='',hv='list',sp='day',jq='',jf='',jp='month',jm=true,jedit=null,hlId=0,chat=[],ex='',inst=null;
+let tab='home',month=today().slice(0,7),addType='expense',flt='all',fcat='',per='month',hq='',hv='list',sp='day',jq='',jf='',jp='month',jm=true,jedit=null,tedit=null,hlId=0,chat=[],ex='',inst=null;
 
-const save=()=>localStorage.setItem(K,JSON.stringify(S));
+let G={};try{G=JSON.parse(localStorage.getItem('budget-gdrive'))||{}}catch(e){}
+const saveG=()=>{try{localStorage.setItem('budget-gdrive',JSON.stringify(G))}catch(e){}};
+const save=()=>{localStorage.setItem(K,JSON.stringify(S));if(G.on){G.d=1;saveG()}};
 const ad=(d,n)=>{const x=new Date(d+'T00:00:00');x.setDate(x.getDate()+n);return x.getFullYear()+'-'+pad2(x.getMonth()+1)+'-'+pad2(x.getDate())};
 const wk=d=>ad(d,-((new Date(d+'T00:00:00').getDay()+6)%7));
 const fd=d=>new Date(d+'T00:00:00').toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short',year:'numeric'});
 const subLbl=c=>c==='School Fees'?'Child (who is the fee for?)':'Item (what is it for?)';
-const goAdd=t=>{addType=t;go('add')};
-const txRow=(x,d)=>`<div class="tx${x.id===hlId?' hl':''}" id="e${x.id}"><div><b>${esc(x.cat)}${x.sub?' › '+esc(x.sub):''}</b><small>${x.date}${x.time?' '+x.time:''}${x.note?' · '+esc(x.note):''}</small></div><b class=${x.type==='income'?'inc':'exp'}>${x.type==='income'?'+':'−'}${fmt(x.amt)}</b>${d?`<button onclick="del(${x.id})" aria-label="Delete entry">🗑</button>`:''}</div>`;
+const goAdd=t=>{tedit=null;addType=t;go('add')};
+const txRow=(x,d)=>`<div class="tx${x.id===hlId?' hl':''}" id="e${x.id}"><div><b>${esc(x.cat)}${x.sub?' › '+esc(x.sub):''}</b><small>${x.date}${x.time?' '+x.time:''}${x.note?' · '+esc(x.note):''}</small></div><b class=${x.type==='income'?'inc':'exp'}>${x.type==='income'?'+':'−'}${fmt(x.amt)}</b>${d?`<span style="display:flex;flex-direction:column"><button onclick="editTx(${x.id})" aria-label="Edit entry">✏️</button><button onclick="del(${x.id})" aria-label="Delete entry">🗑</button></span>`:''}</div>`;
 const num=v=>+String(v).replace(/,/g,'')||0;
 const fmt=n=>S.cur+' '+(+n).toLocaleString('en-US',{maximumFractionDigits:S.cur==='UGX'?0:2});
 const esc=s=>String(s).replace(/[&<>"']/g,c=>'&#'+c.charCodeAt(0)+';');
@@ -119,6 +124,16 @@ function st(){const t=mtx(),[y,m]=month.split('-').map(Number),days=new Date(y,m
  names.forEach(c=>{rows.push({n:c,sp:by[c]||0,l:catLim(c)});(S.subs[c]||[]).forEach(u=>{const k=c+' › '+u,sp=sb[k]||0,l=+S.budgets[k]||0;if(sp||l)rows.push({n:k,sp,l})})});
  return{t,days,now,by,rows,exp:sum(t,'expense'),inc:sum(t,'income'),tb:S.cats.expense.reduce((a,c)=>a+catLim(c),0),top:Object.keys(by).sort((a,b)=>by[b]-by[a])[0]}}
 
+const TIPS={
+ inc:['Pay yourself first: put part of every income aside for savings as soon as you receive it.','Record every shilling you receive, even small amounts. Small income adds up.','Follow up on money people owe you (Accounts Receivable) on a fixed day each week.','Try to have more than one source of income, for example farming and a small business.','Sell farm produce when prices are good, and store what you can until then.','Record gifts and donations as income so your budget shows the true picture.','Keep 10% to 20% of any income as savings for school fees and emergencies.'],
+ exp:['Write down every expense on the same day. What is not recorded is soon forgotten.','Before buying, ask: do I need it, or do I only want it? Wait one day for things that are not urgent.','Buy farm inputs such as seeds and feeds together with other farmers to get a better price.','Compare prices in two shops before buying anything big.','Pay school fees early in the term and in parts, so it does not pile up at once.','Watch the small daily costs like airtime, snacks and transport. They add up every month.','Plan your food shopping with a list to avoid buying what you did not plan for.'],
+ bud:['Set a limit for every category in Budgets. A budget without limits is only a record.','Check your budget ring each morning. Below 80% is safe. Above 80%, slow down.','Plan for costs that come once in a while, like school fees, weddings and sadaqa. Spread them across the months.','A simple guide: about 50% for needs, 30% for wants and 20% for savings. Adjust it to your life.','At the end of the month, download the PDF report and use it to adjust next month\'s limits.','Build an emergency fund of at least one month of expenses.','Give every shilling a job: when income arrives, fill your budget boxes straight away.']};
+function tips(s){const T=today(),cur=month===T.slice(0,7),dn=Math.floor(new Date(T+'T00:00:00')/864e5),pick=(a,k)=>a[(dn+k)%a.length],f=fmt,
+ td=sum(S.tx.filter(x=>x.date===T),'expense'),avg=s.exp/s.now,pc=s.tb?s.exp/s.tb:0,tc=s.rows.find(r=>!r.n.includes('›'));
+ const i=cur&&!s.inc?'No income recorded this month yet. Record every payment you receive, even small ones.':s.inc&&s.exp>s.inc?`You have spent ${f(s.exp-s.inc)} more than you received this month. Delay anything that is not urgent.`:pick(TIPS.inc,0);
+ const e=cur&&s.now>1&&td>0&&td>avg*1.5?`You spent ${f(td)} today, above your daily average of ${f(avg)}. Check that everything was needed.`:tc&&s.exp&&tc.sp/s.exp>.4?`${tc.n} takes ${Math.round(tc.sp/s.exp*100)}% of your spending. Look for a way to reduce it.`:pick(TIPS.exp,2);
+ const b=!s.tb?'You have not set any budget limits yet. Open Budgets and set a limit for each category.':pc>1?`You are over your total budget by ${f(s.exp-s.tb)}. Pause spending that is not urgent.`:pc>.8?`You have used ${Math.round(pc*100)}% of your budget. Spend carefully for the rest of the month.`:pick(TIPS.bud,4);
+ return[['💰','Income','var(--inc)',i],['🧾','Expenses','var(--exp)',e],['🎯','Budget','var(--pri)',b]]}
 const PB='<div class=row><button class=btn onclick="doPdf(0)">⬇ Download PDF</button><button class="btn ghost" onclick="doPdf(1)">Share PDF</button></div>';
 const V={
 home(){const s=st(),T=today(),W=wk(T),at=S.tx,[my,mm]=month.split('-'),xs=f=>sum(at.filter(f),'expense'),h=new Date().getHours(),
@@ -129,24 +144,25 @@ home(){const s=st(),T=today(),W=wk(T),at=S.tx,[my,mm]=month.split('-'),xs=f=>sum
  const seg=tp.map(([n,v],i)=>{const l=v/s.exp*C,e=`<circle cx=50 cy=50 r=42 fill=none stroke="${P[i]}" stroke-width=14 stroke-dasharray="${l} ${C-l}" stroke-dashoffset="${-cum}" transform="rotate(-90 50 50)"/>`;cum+=l;return e}).join(''),
  days=[...Array(7)].map((_,i)=>ad(T,i-6)),vals=days.map(d=>[sum(at.filter(x=>x.date===d),'income'),sum(at.filter(x=>x.date===d),'expense')]),mx=Math.max(1,...vals.flat()),
  chart=days.map((d,i)=>{const x=10+i*41,[a,b]=vals[i],ha=a/mx*88,hb=b/mx*88;return `<rect x=${x} y=${100-ha} width=14 height=${ha} rx=3 fill="var(--inc)"/><rect x=${x+16} y=${100-hb} width=14 height=${hb} rx=3 fill="var(--exp)"/><text x=${x+15} y=118 text-anchor=middle font-size=10 fill=currentColor>${'SMTWTFS'[new Date(d+'T00:00:00').getDay()]}</text>`}).join('');
- return `<div class=hero><small>${gr} 👋 · ${ml}</small><h2>${fmt(s.inc-s.exp)}</h2><small>Balance this month</small>
+ return `${gBanner()}<div class=hero><small>${gr} 👋 · ${ml}</small><h2>${fmt(s.inc-s.exp)}</h2><small>Balance this month</small>
  <div class=pills style="margin-top:12px"><div>▲ Income<b>${fmt(s.inc)}</b></div><div>▼ Expenses<b>${fmt(s.exp)}</b></div></div></div>
  <div class=qa><button onclick="goAdd('expense')"><span>➖</span>Expense</button><button onclick="goAdd('income')"><span>➕</span>Income</button><button onclick="calc(1)"><span>🧮</span>Calculator</button><button onclick="doPdf(0)"><span>📄</span>PDF</button></div>
  <div class=kp><div><small>Spent today</small><b class=exp>${fmt(xs(x=>x.date===T))}</b></div><div><small>Spent this week</small><b class=exp>${fmt(xs(x=>x.date>=W&&x.date<=T))}</b></div>
  <div><small>Average per day</small><b>${fmt(s.exp/s.now)}</b></div><div><small>Kept from income</small><b class=inc>${s.inc?Math.round((s.inc-s.exp)/s.inc*100)+'%':'—'}</b></div></div>
+ <div class=card><h3>💡 Today's tips</h3>${tips(s).map(([ic,n,c,t])=>`<div style="border-left:4px solid ${c};padding:2px 10px;margin:10px 0"><small class=mut>${ic} ${n}</small><div>${esc(t)}</div></div>`).join('')}<p class=mut style="margin-bottom:0">New tips every day.</p></div>
  <div class=card><h3>🎯 Budget</h3><div class=flex><svg viewBox="0 0 100 100" width=110 height=110><circle cx=50 cy=50 r=42 fill=none stroke="var(--bd)" stroke-width=10 /><circle cx=50 cy=50 r=42 fill=none stroke="${col}" stroke-width=10 stroke-linecap=round stroke-dasharray="${Math.min(1,pct)*C} ${C}" transform="rotate(-90 50 50)"/><text x=50 y=56 text-anchor=middle font-size=20 font-weight=700 fill=currentColor>${Math.round(pct*100)}%</text></svg>
  <div class=leg>${s.tb?`<div><span>Budget</span><b>${fmt(s.tb)}</b></div><div><span>Spent</span><b class=exp>${fmt(s.exp)}</b></div><div><span>${s.tb>=s.exp?'Left':'Over by'}</span><b class="${s.tb>=s.exp?'inc':'exp'}">${fmt(Math.abs(s.tb-s.exp))}</b></div>`:'<span class=mut>No budget yet. Open Budgets and set a limit for each category.</span>'}</div></div></div>
  <div class=card><h3>📈 Last 7 days</h3><div style="color:var(--mut)"><svg viewBox="0 0 300 126" width=100%>${chart}</svg></div><p class=mut><span class=inc>■</span> Income &nbsp; <span class=exp>■</span> Expenses</p></div>
  <div class=card><h3>🍩 Where the money goes</h3>${s.exp?`<div class=flex><svg viewBox="0 0 100 100" width=120 height=120><circle cx=50 cy=50 r=42 fill=none stroke="var(--bd)" stroke-width=14 />${seg}</svg><div class=leg>${tp.map(([n,v],i)=>`<div><span><i style="background:${P[i]}"></i>${esc(n)}</span><b>${Math.round(v/s.exp*100)}%</b></div>`).join('')}</div></div>`:'<p class=mut>Nothing spent yet this month. Tap Expense above to start.</p>'}</div>
  ${s.rows.some(r=>r.l)?`<div class=card><h3>⚠️ Budget watch</h3>${s.rows.filter(r=>r.l).slice(0,6).map(r=>`<div class=cat><div><span>${esc(r.n)}</span><span>${fmt(r.sp)} / ${fmt(r.l)}</span></div>${bar(r.sp,r.l)}</div>`).join('')}</div>`:''}
  <div class=card><h3>🕒 Latest entries</h3>${at.length?at.slice().sort(byNew).slice(0,5).map(x=>`<div class=go onclick="openEntry(${x.id})">${txRow(x)}</div>`).join(''):'<p class=mut>No entries yet.</p>'}</div>`},
-add(){return `<div class=card><div class=seg><button id=bE onclick="setType('expense')">Expense</button><button id=bI onclick="setType('income')">Income</button></div>
+add(){return `<div class=card><h3 id=ah hidden></h3><div class=seg><button id=bE onclick="setType('expense')">Expense</button><button id=bI onclick="setType('income')">Income</button></div>
  <label>Amount (${S.cur})<input id=amt inputmode=decimal placeholder="0" oninput="cm(this)"></label>
  <label>Category<select id=cat onchange="subs()"></select></label>
  <label id=sl hidden><span id=sll></span><select id=sub></select></label>
  <div class=row><label>Date<input id=date type=date value="${today()}"></label><label>Time<input id=time type=time value="${nowT()}"></label></div>
  <label>Note (optional)<input id=note maxlength=80 placeholder="e.g. Vegetables at the market"></label>
- <button class=btn onclick="addTx()">Save entry</button><p id=msg class=mut></p></div>`},
+ <button class=btn id=ab onclick="addTx()">Save entry</button><button class="btn ghost" id=ax hidden onclick="go('history')">Cancel editing</button><p id=msg class=mut></p></div>`},
 history(){const tg=`<div class=seg style="margin-bottom:12px"><button class="${hv==='list'?'on':''}" onclick="hv='list';render()">📋 Entries</button><button class="${hv==='sum'?'on':''}" onclick="hv='sum';render()">📊 Summary</button></div>`;
  return tg+(hv==='sum'?`<div class=seg style="margin-bottom:12px">${[['day','Daily'],['week','Weekly'],['month','Monthly']].map(([k,t])=>`<button class="${sp===k?'on':''}" onclick="sp='${k}';render()">${t}</button>`).join('')}</div>`:
  `<div class=card><input placeholder="🔍 Search note, category, amount..." value="${esc(hq)}" oninput="hq=this.value;drawHist()">
@@ -174,6 +190,7 @@ ai(){return `<div class=card><h3>🤖 Money assistant</h3><p class=mut>Ask about
  <div class=chips>${['Summary','Am I over budget?','Spent today?','Forecast end of month','Where can I save?','Biggest expenses'].map(q=>`<button onclick="ask(this.textContent)">${q}</button>`).join('')}</div>
  <div class=row><input id=aq placeholder="e.g. How much did I spend on feeds?" onkeydown="if(event.key==='Enter')ask(this.value)"><button class=btn style="flex:0 0 70px;margin:4px 0 0" onclick="ask($('#aq').value)">Ask</button></div></div><div id=chat></div>`},
 more(){return `<div class=card><h3>Currency</h3><select onchange="S.cur=this.value;save()">${opts(['UGX','KES','TZS','RWF','USD','EUR','GBP'],S.cur)}</select></div>
+ ${gCard()}
  <div class=card><h3>Your data</h3><p class=mut>Everything is saved only on this phone. Save a backup often.</p>
  <button class=btn onclick="csv()">Download Excel (CSV) file</button><button class="btn ghost" onclick="backup()">Save backup file</button>
  <label>Restore from a backup file<input type=file accept=".json" onchange="restore(this)"></label></div>
@@ -181,18 +198,26 @@ more(){return `<div class=card><h3>Currency</h3><select onchange="S.cur=this.val
  <div class=card><button class="btn red" onclick="wipe()">Delete all data</button></div>`}
 };
 
-function render(){jedit=null;$('#month').value=month;
+let dgf=null;
+function dlg(m,yes,lbl){$('#dm').textContent=m;dgf=yes||null;$('#dn').hidden=!yes;$('#dy').textContent=lbl||'OK';$('#dg').hidden=false}
+function dgx(ok){$('#dg').hidden=true;const f=dgf;dgf=null;if(ok&&f)f()}
+function render(){jedit=null;if(tab!=='add')tedit=null;$('#month').value=month;
  document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.t===tab));
  $('#view').innerHTML=V[tab]();
- if(tab==='add')setType(addType);if(tab==='history')drawHist();if(tab==='ai')drawChat();if(tab==='journal'){jsubs();drawJ()}}
+ if(tab==='add'){setType(addType);if(tedit)fillEdit()}if(tab==='history')drawHist();if(tab==='ai')drawChat();if(tab==='journal'){jsubs();drawJ()}}
 const go=t=>{tab=t;render();scrollTo(0,0)};
 const msg=t=>{$('#msg').textContent=t};
 function subs(){const c=$('#cat').value,l=S.subs[c];$('#sl').hidden=addType!=='expense'||!l;$('#sll').textContent=subLbl(c);$('#sub').innerHTML=opts(l||[])}
 function setType(t){addType=t;$('#bE').classList.toggle('on',t==='expense');$('#bI').classList.toggle('on',t==='income');$('#cat').innerHTML=opts(S.cats[t]);subs()}
-function addTx(){const a=num($('#amt').value);if(!(a>0))return msg('Please type an amount above 0.');
- const c=$('#cat').value;
- S.tx.push({id:Date.now(),type:addType,amt:a,cat:c,sub:addType==='expense'&&S.subs[c]?$('#sub').value:'',date:$('#date').value||today(),time:$('#time').value||nowT(),note:$('#note').value.trim()});
- save();$('#amt').value=$('#note').value='';$('#time').value=nowT();msg('Saved ✔ You can add another entry.')}
+function addTx(){const a=num($('#amt').value);if(!(a>0))return msg('Please type an amount above 0.');const c=$('#cat').value,
+ o={type:addType,amt:a,cat:c,sub:addType==='expense'&&S.subs[c]?$('#sub').value:'',date:$('#date').value||today(),time:$('#time').value||nowT(),note:$('#note').value.trim()};
+ if(tedit){const x=S.tx.find(t=>t.id===tedit),id=tedit;if(x)Object.assign(x,o);save();tedit=null;return openEntry(id)}
+ S.tx.push({id:Date.now(),...o});save();$('#amt').value=$('#note').value='';$('#time').value=nowT();msg('Saved ✔ You can add another entry.')}
+function editTx(id){const x=S.tx.find(t=>t.id===id);if(!x)return;tedit=id;addType=x.type;go('add')}
+function fillEdit(){const x=S.tx.find(t=>t.id===tedit);if(!x){tedit=null;return}
+ $('#amt').value=x.amt.toLocaleString('en-US',{maximumFractionDigits:2});$('#cat').value=x.cat;subs();$('#sub').value=x.sub||'';
+ $('#date').value=x.date;$('#time').value=x.time||'';$('#note').value=x.note||'';
+ $('#ah').hidden=false;$('#ah').textContent='✏️ Edit entry';$('#ab').textContent='Update entry';$('#ax').hidden=false}
 function drawHist(){if(hv==='sum')return drawSum();const k=hq.toLowerCase(),k2=k.replace(/,/g,'');
  const t=(per==='all'?S.tx:mtx()).filter(x=>{const h=[x.cat,x.sub,x.note,x.amt,x.date].join(' ').toLowerCase();return(flt==='all'||x.type===flt)&&(!fcat||x.cat===fcat)&&(!k||h.includes(k)||h.includes(k2))}).sort(byNew);
  $('#hl').innerHTML=`<div class=card><p class=mut>${t.length} entries · In ${fmt(sum(t,'income'))} · Out ${fmt(sum(t,'expense'))}</p>`+(t.length?t.map(x=>txRow(x,1)).join(''):'<p class=mut>No entries found.</p>')+'</div>'}
@@ -203,7 +228,7 @@ function drawSum(){const g={},lab=k=>sp==='month'?new Date(k+'-01T00:00:00').toL
 function addSub(){const c=$('#sc').value,n=$('#sn').value.trim();if(!n)return;const l=S.subs[c]=S.subs[c]||[];if(!l.includes(n)){const i=l.indexOf('Other');i<0?l.push(n):l.splice(i,0,n);save()}render()}
 // ---- Journal ----
 function jsubs(){const c=$('#jc').value,l=S.subs[c];$('#jsl').hidden=!l;$('#jsll').textContent=subLbl(c);$('#js').innerHTML=opts([['','—'],...(l||[])])}
-function addNote(){const t=$('#jn').value.trim();if(!t)return alert('Please write something first.');const c=$('#jc').value,
+function addNote(){const t=$('#jn').value.trim();if(!t)return dlg('Please write something first.');const c=$('#jc').value,
  o={date:$('#jd').value||today(),time:$('#jt').value||nowT(),topic:c,sub:S.subs[c]?$('#js').value:'',text:t};
  if(jedit){const n=S.journal.find(x=>x.id===jedit);if(n)Object.assign(n,o);resetJ()}else S.journal.push({id:Date.now(),...o});
  save();$('#jn').value='';$('#jt').value=nowT();
@@ -219,7 +244,7 @@ function openNote(id){const n=S.journal.find(x=>x.id===id);if(!n)return;
  flt='all';per='all';hv='list';hlId=0;tab='history';render();scrollTo(0,0)}
 function openEntry(id){fcat='';hq='';flt='all';per='all';hv='list';hlId=id;tab='history';render();
  const e=$('#e'+id);if(e)e.scrollIntoView({block:'center'});setTimeout(()=>{hlId=0;const x=$('#e'+id);x&&x.classList.remove('hl')},3500)}
-function delNote(id){if(confirm('Delete this note?')){S.journal=S.journal.filter(n=>n.id!==id);save();drawJ()}}
+function delNote(id){dlg('Delete this note?',()=>{S.journal=S.journal.filter(n=>n.id!==id);save();drawJ()},'Delete')}
 function drawJ(){const k=jq.toLowerCase(),inP=x=>jp==='all'||x.date.startsWith(month),it=[];
  S.journal.filter(n=>inP(n)&&(!jf||n.topic===jf)&&(!k||[n.text,n.topic,n.sub].join(' ').toLowerCase().includes(k))).forEach(n=>it.push({k:'n',n,d:n.date,t:n.time||''}));
  if(jm)S.tx.filter(x=>inP(x)&&(!jf||x.cat===jf)&&(!k||[x.cat,x.sub,x.note].join(' ').toLowerCase().includes(k))).forEach(x=>it.push({k:'t',n:x,d:x.date,t:x.time||''}));
@@ -227,7 +252,7 @@ function drawJ(){const k=jq.toLowerCase(),inP=x=>jp==='all'||x.date.startsWith(m
  it.forEach(i=>{if(i.d!==last){last=i.d;const day=S.tx.filter(x=>x.date===i.d);h+=`<p class=mut style="margin:16px 4px 6px"><b>${fd(i.d)}</b> · In <span class=inc>${fmt(sum(day,'income'))}</span> · Out <span class=exp>${fmt(sum(day,'expense'))}</span></p>`}
   h+=i.k==='n'?`<div class="card go" style="border-left:4px solid var(--warn);margin-bottom:8px" onclick="openNote(${i.n.id})"><small class=mut>📝 ${i.t} · ${esc(i.n.topic||'General')}${i.n.sub?' › '+esc(i.n.sub):''}</small><div style="white-space:pre-wrap;margin:4px 0 8px">${esc(i.n.text)}</div><button class="btn ghost" style="width:auto;padding:4px 12px;font-size:13px;margin-right:8px" onclick="event.stopPropagation();editNote(${i.n.id})">✏️ Edit</button><button class="btn red" style="width:auto;padding:4px 12px;font-size:13px" onclick="event.stopPropagation();delNote(${i.n.id})">Delete</button></div>`:`<div class="card go" style="padding:2px 14px;margin-bottom:8px" onclick="openEntry(${i.n.id})">${txRow(i.n)}</div>`});
  $('#jl').innerHTML=h||'<p class=mut>No journal notes here yet. Write your first note above.</p>'}
-function del(id){if(confirm('Delete this entry?')){S.tx=S.tx.filter(x=>x.id!==id);save();render()}}
+function del(id){dlg('Delete this entry?',()=>{S.tx=S.tx.filter(x=>x.id!==id);save();render()},'Delete')}
 function setB(el){S.budgets[el.dataset.k]=num(el.value);save()}
 function addCat(k){const n=$('#nc').value.trim();if(!n)return;if(!S.cats[k].includes(n)){S.cats[k].push(n);save()}render()}
 
@@ -288,8 +313,45 @@ function mkPdf(lines){const per=60,pages=[];for(let i=0;i<lines.length;i+=per)pa
  return new Blob([out],{type:'application/pdf'})}
 async function doPdf(share){const f=new File([mkPdf(report())],'budget-'+month+'.pdf',{type:'application/pdf'});
  if(share){if(navigator.canShare&&navigator.canShare({files:[f]})){try{await navigator.share({files:[f],title:'My Budget '+month})}catch(e){}return}
-  alert('Sharing is not available here, so the PDF will download. Open it from your Downloads and share it from there.')}
+  dlg('Sharing is not available here, so the PDF will download. Open it from your Downloads and share it from there.')}
  dl(f.name,f,'application/pdf')}
+
+// ---- Google Drive auto backup (every 30 minutes while the app is open) ----
+let gTok='',gExp=0,gScript=null,gBusy=0,gFail=0;
+const gLoad=()=>gScript||(gScript=new Promise((ok,no)=>{const e=document.createElement('script');e.src='https://accounts.google.com/gsi/client';e.onload=ok;e.onerror=()=>{gScript=null;no(new Error('offline'))};document.head.appendChild(e)}));
+async function gToken(){if(gTok&&Date.now()<gExp-6e4)return gTok;await gLoad();
+ return new Promise((ok,no)=>{const c=google.accounts.oauth2.initTokenClient({client_id:G.cid,scope:'https://www.googleapis.com/auth/drive.file',
+  callback:r=>{if(r.error)return no(new Error(r.error));gTok=r.access_token;gExp=Date.now()+r.expires_in*1e3;ok(gTok)},error_callback:e=>no(new Error('popup '+(e.type||'')))});
+  c.requestAccessToken({prompt:G.ok?'':'consent'})})}
+async function gSend(retry){const t=await gToken(),bd='bnd'+Date.now(),meta=G.fid?{}:{name:'my-budget-backup.json',mimeType:'application/json'},
+ mp=`--${bd}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(meta)}\r\n--${bd}\r\nContent-Type: application/json\r\n\r\n${JSON.stringify(S)}\r\n--${bd}--`,
+ r=await fetch('https://www.googleapis.com/upload/drive/v3/files'+(G.fid?'/'+G.fid:'')+'?uploadType=multipart',{method:G.fid?'PATCH':'POST',headers:{Authorization:'Bearer '+t,'Content-Type':'multipart/related; boundary='+bd},body:mp});
+ if(r.status===401&&!retry){gTok='';return gSend(1)}
+ if(r.status===404&&G.fid&&!retry){G.fid='';return gSend(1)}
+ if(!r.ok)throw new Error('Drive '+r.status);G.fid=(await r.json()).id}
+const gMsg=e=>/offline|Failed to fetch|NetworkError/i.test(e.message)?'No internet connection.':/popup|access_denied|closed/i.test(e.message)?'Google sign-in was cancelled or blocked.':/Drive 403/.test(e.message)?'Google Drive is not switched on for your project (setup step 3).':'Backup failed ('+e.message+'). Check your Client ID and internet.';
+async function gBackup(auto){if(gBusy)return;
+ if(!S.tx.length&&!S.journal.length){if(!auto)dlg('There is nothing to back up yet. Add an entry first.');return}
+ gBusy=1;try{await gSend();G.on=1;G.ok=1;G.d=0;G.last=Date.now();G.err='';gFail=0;if(!auto)dlg('Backup saved to your Google Drive ✔')}
+ catch(e){gFail=Date.now();if(auto)G.err=gMsg(e)+' Tap Back up now.';else dlg(gMsg(e))}
+ finally{gBusy=0;saveG();if(tab==='more'||(tab==='home'&&G.err))render()}}
+function gConnect(){const c=$('#gcid').value.trim();if(!/\.apps\.googleusercontent\.com$/.test(c))return dlg('Please paste the full Client ID. It ends with .apps.googleusercontent.com');
+ if(c!==G.cid){G.fid='';gTok='';G.ok=0}G.cid=c;saveG();gBackup(0)}
+async function gRestore(){const i=$('#gcid');if(i&&i.value.trim()&&i.value.trim()!==G.cid){G.cid=i.value.trim();G.fid='';gTok='';G.ok=0}
+ if(!G.cid)return dlg('Paste your Google Client ID first.');
+ try{const t=await gToken(),h={headers:{Authorization:'Bearer '+t}};
+  if(!G.fid){const r=await(await fetch('https://www.googleapis.com/drive/v3/files?orderBy=modifiedTime%20desc&fields=files(id)&q='+encodeURIComponent("name='my-budget-backup.json' and trashed=false"),h)).json();
+   if(!r.files||!r.files.length)return dlg('No backup was found in your Google Drive yet.');G.fid=r.files[0].id}
+  const d=await(await fetch('https://www.googleapis.com/drive/v3/files/'+G.fid+'?alt=media',h)).json();if(!Array.isArray(d.tx))throw new Error('format');
+  dlg('Replace the data on this phone with your Google Drive backup?',()=>{S=norm(d);save();G.on=1;G.ok=1;G.d=0;G.last=Date.now();G.err='';saveG();render();dlg('Backup restored ✔')},'Restore')}
+ catch(e){dlg(/format/.test(e.message)?'That Drive file is not a valid backup.':gMsg(e))}}
+function gTick(){if(!G.on||!G.d||gBusy||!navigator.onLine)return;const n=Date.now();if(n-(G.last||0)<18e5||(gFail&&n-gFail<18e5))return;gBackup(1)}
+const gBanner=()=>G.on&&G.err?`<div class=card style="border-left:4px solid var(--warn)"><b>☁️ Google Drive backup paused</b><p class=mut>${esc(G.err)}</p><button class=btn onclick="gBackup(0)">Back up now</button></div>`:'';
+const gCard=()=>`<div class=card><h3>☁️ Google Drive backup</h3>`+(G.on?
+ `<p class=mut>✅ Auto backup is ON. While the app is open, a copy is saved to your Google Drive every 30 minutes if something changed.<br>Last backup: ${G.last?new Date(G.last).toLocaleString('en-GB'):'not yet'}</p>${G.err?`<p class=mut style="color:var(--exp)">${esc(G.err)}</p>`:''}
+ <button class=btn onclick="gBackup(0)">Back up now</button><button class="btn ghost" onclick="gRestore()">Restore from Google Drive</button><button class="btn red" onclick="G.on=0;saveG();render()">Turn off auto backup</button>`:
+ `<p class=mut>Paste your Google Client ID, then tap Connect.</p><label>Google Client ID<input id=gcid value="${esc(G.cid||'')}" placeholder="123-abc.apps.googleusercontent.com"></label>
+ <button class=btn onclick="gConnect()">Connect Google Drive</button><button class="btn ghost" onclick="gRestore()">Restore from Google Drive</button>`)+`</div>`;
 
 // ---- Data tools ----
 function dl(name,data,type){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([data],{type}));a.download=name;a.click()}
@@ -297,10 +359,11 @@ function csv(){const r=[['Date','Time','Type','Category','Item','Amount','Note']
  dl('budget.csv',r.map(x=>x.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n'),'text/csv')}
 const backup=()=>dl('budget-backup-'+today()+'.json',JSON.stringify(S),'application/json');
 function restore(i){const f=i.files[0];if(!f)return;const r=new FileReader();
- r.onload=()=>{try{const d=JSON.parse(r.result);if(!Array.isArray(d.tx))throw 0;S=norm(d);save();render();alert('Backup restored ✔')}catch(e){alert('That file is not a valid backup.')}};r.readAsText(f)}
-function wipe(){if(confirm('Delete ALL entries and budgets? This cannot be undone.')){S=norm();save();render()}}
+ r.onload=()=>{try{const d=JSON.parse(r.result);if(!Array.isArray(d.tx))throw 0;S=norm(d);save();render();dlg('Backup restored ✔')}catch(e){dlg('That file is not a valid backup.')}};r.readAsText(f)}
+function wipe(){dlg('Delete ALL entries and budgets? This cannot be undone.',()=>{S=norm();save();render()},'Delete all')}
 function install(){inst.prompt();inst=null;render()}
 
+setInterval(gTick,6e4);document.addEventListener('visibilitychange',()=>{if(!document.hidden)gTick()});addEventListener('online',gTick);setTimeout(gTick,4000);
 $('#month').onchange=e=>{month=e.target.value||month;render()};
 addEventListener('beforeinstallprompt',e=>{e.preventDefault();inst=e;if(tab==='more')render()});
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js');
