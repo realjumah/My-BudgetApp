@@ -126,6 +126,16 @@ const norm=d=>{const s=Object.assign(structuredClone(DEF),d||{});
  for(const k of Object.keys(s.budgets))if(k===O||k.startsWith(O+' › ')){s.budgets[N+k.slice(O.length)]=s.budgets[k];delete s.budgets[k]}
  // one-time: the 14 old starter categories are removed (new categories stay; "Transport" is in both lists)
  if(!s.m1){const OLD=['Food','Rent','Airtime & Data','Health','School Fees','Business','Savings','Entertainment','Sadaqa','Contributions','Debt Payment','Saloon','Agric','Other'];s.cats.expense=s.cats.expense.filter(c=>!OLD.includes(c));s.m1=1}
+ // one-time: entries saved under the old starter categories are moved to the matching new category (the old label is kept in t.was)
+ if(!s.m2){const MAP={'Food':['Food & Groceries'],'Rent':['Housing & Accommodation','Rent'],'Airtime & Data':['Utilities & Communication','Airtime'],'Health':['Healthcare'],'School Fees':['Education','School fees'],'Business':['Investments & Wealth Creation','Income-generating project'],'Savings':['Savings & Emergency Fund'],'Entertainment':['Recreation & Entertainment'],'Sadaqa':['Islamic Obligations & Charity','Sadaqah'],'Contributions':['Social Obligations','Community contributions'],'Debt Payment':['Debt Repayment'],'Saloon':['Personal Care & Development','Haircuts & grooming'],'Agric':['Investments & Wealth Creation','Agriculture'],'Other':['Miscellaneous & Unexpected']};
+  s.who=s.who||{};const wl=s.who.Education=s.who.Education||['Others'];
+  s.tx.forEach(t=>{const m=MAP[t.cat];if(t.type!=='expense'||!m)return;t.was=t.cat+(t.sub?' › '+t.sub:'');
+   if(t.cat==='School Fees'){t.who=t.sub==='Other'?'Others':t.sub||'';if(t.who&&!wl.includes(t.who)){const i=wl.indexOf('Others');i<0?wl.push(t.who):wl.splice(i,0,t.who)}}
+   else if(t.cat==='Agric'&&t.sub)t.note=t.sub+(t.note?'. '+t.note:'');
+   t.cat=m[0];t.sub=m[1]||''});
+  (s.journal||[]).forEach(j=>{const m=!['Business','Savings','Other'].includes(j.topic)&&MAP[j.topic];if(!m)return;if(j.sub)j.text='['+j.sub+'] '+j.text;j.topic=m[0];j.sub=m[1]||''});
+  for(const o in MAP){if(s.budgets[o]===undefined)continue;const nk=MAP[o][0]+(MAP[o][1]?' › '+MAP[o][1]:'');if(!s.budgets[nk])s.budgets[nk]=s.budgets[o];delete s.budgets[o]}
+  s.m2=1}
  // food items: "Meat, fish & eggs" is now "Meat & fish"; "Cooking oil & essentials" is now "Ingredients, spices & essentials"
  const F='Food & Groceries',FR={'Meat, fish & eggs':'Meat & fish','Cooking oil & essentials':'Ingredients, spices & essentials'};
  if(s.subs[F]){s.subs[F]=s.subs[F].map(u=>FR[u]||u).filter((u,i,a)=>a.indexOf(u)===i);
@@ -136,6 +146,7 @@ const norm=d=>{const s=Object.assign(structuredClone(DEF),d||{});
  s.subs=Object.assign({},DEF.subs,s.subs);
  for(const k in DEF.subs)DEF.subs[k].forEach(u=>{if(!s.subs[k].includes(u)){const i=s.subs[k].indexOf('Other');i<0?s.subs[k].push(u):s.subs[k].splice(i,0,u)}});return s};
 let S;try{S=norm(JSON.parse(localStorage.getItem(K)))}catch(e){S=norm()}
+try{localStorage.setItem(K,JSON.stringify(S))}catch(e){}
 let tab='home',month=today().slice(0,7),addType='expense',flt='all',fcat='',per='month',hq='',hv='list',sp='day',jq='',jf='',jp='month',jm=true,jedit=null,tedit=null,hlId=0,chat=[],ex='',inst=null;
 
 let G={};try{G=JSON.parse(localStorage.getItem('budget-gdrive'))||{}}catch(e){}
@@ -263,7 +274,7 @@ function addTx(){const a=num($('#amt').value);if(!(a>0))return msg('Please type 
 function editTx(id){const x=S.tx.find(t=>t.id===id);if(!x)return;tedit=id;addType=x.type;go('add')}
 function ensure(id,v){const e=$(id);if(v&&![...(e.options||[])].some(o=>o.value===v))e.innerHTML+=`<option>${esc(v)}</option>`;e.value=v||''}
 function fillEdit(){const x=S.tx.find(t=>t.id===tedit);if(!x){tedit=null;return}
- $('#amt').value=x.amt.toLocaleString('en-US',{maximumFractionDigits:2});ensure('#cat',x.cat);subs();ensure('#sub',x.sub);ensure('#who',x.who);
+ $('#amt').value=x.amt.toLocaleString('en-US',{maximumFractionDigits:2});ensure('#cat',x.cat);subs();[['#sub',x.sub],['#who',x.who]].forEach(([id,v])=>{if(!v)$(id).innerHTML='<option value="">— not set —</option>'+$(id).innerHTML});ensure('#sub',x.sub);ensure('#who',x.who);
  $('#date').value=x.date;$('#time').value=x.time||'';$('#note').value=x.note||'';
  $('#ah').hidden=false;$('#ah').textContent='✏️ Edit entry';$('#ab').textContent='Update entry';$('#ax').hidden=false}
 function addWho(){const n=$('#wn').value.trim();if(!n)return;const l=S.who.Education=S.who.Education||[];if(!l.includes(n)){const i=l.indexOf('Others');i<0?l.push(n):l.splice(i,0,n);save()}render()}
