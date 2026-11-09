@@ -81,7 +81,7 @@ nav button{flex:1;padding:8px 0;border:0;background:none;color:var(--mut);font-s
 const K='budget-pwa-v1',$=s=>document.querySelector(s),pad2=n=>String(n).padStart(2,'0');
 const today=()=>{const d=new Date();return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate())};
 const nowT=()=>{const d=new Date();return pad2(d.getHours())+':'+pad2(d.getMinutes())};
-const DEF={cur:'UGX',tx:[],budgets:{},journal:[],
+const DEF={cur:'UGX',tx:[],budgets:{},journal:[],who:{Education:['Awwal Juma','Akbar Juma','Maira Juma','Others']},
  cats:{expense:[
  'Housing & Accommodation','Food & Groceries','Transport','Utilities & Communication','Electronics & Technology',
  'Education','Clothing','Healthcare','Household Supplies',
@@ -94,7 +94,7 @@ const DEF={cur:'UGX',tx:[],budgets:{},journal:[],
  'Casual Work','Rental Income','Gifts/Family Support','Refunds/Reimbursements','Other Income'
  ]},
  subs:{
- 'Food & Groceries':['Posho & maize flour','Cassava flour & millet','Beans & rice','Cooking oil & essentials','Meat, fish & eggs','Vegetables & fruits','Milk, bread & snacks','Assorted food','Eating out','Other'],
+ 'Food & Groceries':['Posho & maize flour','Cassava flour & millet','Beans & rice','Ingredients, spices & essentials','Meat & fish','Chicken & eggs','Vegetables & fruits','Milk, bread & snacks','Assorted food','Eating out','Other'],
  'Transport':['Boda boda','Taxi & bus fares','Fuel','Vehicle repairs','Parking','Long-distance travel','Other'],
  'Utilities & Communication':['Electricity','Water','Charcoal/firewood/gas','Airtime','Internet bundles','Mobile money charges','Other'],
  'Education':['School fees','Uniforms & shoes','Books & stationery','Tour fees','School transport','Madrasa','Other'],
@@ -124,6 +124,12 @@ const norm=d=>{const s=Object.assign(structuredClone(DEF),d||{});
  if(s.subs[N])s.subs[N]=s.subs[N].map(u=>u==='Examination fees'?'Tour fees':u).filter((u,i,a)=>a.indexOf(u)===i);
  s.tx.forEach(t=>{if(t.cat===O)t.cat=N});(s.journal||[]).forEach(j=>{if(j.topic===O)j.topic=N});
  for(const k of Object.keys(s.budgets))if(k===O||k.startsWith(O+' › ')){s.budgets[N+k.slice(O.length)]=s.budgets[k];delete s.budgets[k]}
+ // one-time: the 14 old starter categories are removed (new categories stay; "Transport" is in both lists)
+ if(!s.m1){const OLD=['Food','Rent','Airtime & Data','Health','School Fees','Business','Savings','Entertainment','Sadaqa','Contributions','Debt Payment','Saloon','Agric','Other'];s.cats.expense=s.cats.expense.filter(c=>!OLD.includes(c));s.m1=1}
+ // food items: "Meat, fish & eggs" is now "Meat & fish"; "Cooking oil & essentials" is now "Ingredients, spices & essentials"
+ const F='Food & Groceries',FR={'Meat, fish & eggs':'Meat & fish','Cooking oil & essentials':'Ingredients, spices & essentials'};
+ if(s.subs[F]){s.subs[F]=s.subs[F].map(u=>FR[u]||u).filter((u,i,a)=>a.indexOf(u)===i);
+  for(const o in FR){const ok=F+' › '+o,nk=F+' › '+FR[o];if(s.budgets[ok]!==undefined){if(!s.budgets[nk])s.budgets[nk]=s.budgets[ok];delete s.budgets[ok]}}}
  for(const k in DEF.cats)DEF.cats[k].forEach(c=>s.cats[k].includes(c)||s.cats[k].push(c));
  s.cats.income=s.cats.income.filter(c=>c!=='Gift');
  s.tx.forEach(t=>{if(t.type==='income'&&t.cat==='Gift')t.cat='Gifts/Donations'});
@@ -138,11 +144,11 @@ const save=()=>{localStorage.setItem(K,JSON.stringify(S));if(G.on){G.d=1;saveG()
 const ad=(d,n)=>{const x=new Date(d+'T00:00:00');x.setDate(x.getDate()+n);return x.getFullYear()+'-'+pad2(x.getMonth()+1)+'-'+pad2(x.getDate())};
 const wk=d=>ad(d,-((new Date(d+'T00:00:00').getDay()+6)%7));
 const fd=d=>new Date(d+'T00:00:00').toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short',year:'numeric'});
-const EX={'Phones':'smartphone purchases','Computers & laptops':'new laptop or desktop','Computer accessories':'mouse, keyboard, flash disk, charger','Phone accessories':'phone cover, screen protector, earphones','Laptop repairs':'screen, keyboard, motherboard repairs','Phone repairs':'screen or battery replacement','Software & applications':'paid software, subscriptions','Internet equipment':'router, modem, MiFi','Other electronics':'other electronic devices','Telecom loans':'e.g. MoMo loans'};
+const EX={'Phones':'smartphone purchases','Computers & laptops':'new laptop or desktop','Computer accessories':'mouse, keyboard, flash disk, charger','Phone accessories':'phone cover, screen protector, earphones','Laptop repairs':'screen, keyboard, motherboard repairs','Phone repairs':'screen or battery replacement','Software & applications':'paid software, subscriptions','Internet equipment':'router, modem, MiFi','Other electronics':'other electronic devices','Telecom loans':'e.g. MoMo loans','Ingredients, spices & essentials':'salt, onions, tomatoes, cooking oil'};
 const sOpts=l=>l.map(u=>EX[u]?[u,u+' ('+EX[u]+')']:u);
 const subLbl=c=>c==='School Fees'?'Child (who is the fee for?)':'Item (what is it for?)';
 const goAdd=t=>{tedit=null;addType=t;go('add')};
-const txRow=(x,d)=>`<div class="tx${x.id===hlId?' hl':''}" id="e${x.id}"><div><b>${esc(x.cat)}${x.sub?' › '+esc(x.sub):''}</b><small>${x.date}${x.time?' '+x.time:''}${x.note?' · '+esc(x.note):''}</small></div><b class=${x.type==='income'?'inc':'exp'}>${x.type==='income'?'+':'−'}${fmt(x.amt)}</b>${d?`<span style="display:flex;flex-direction:column"><button onclick="editTx(${x.id})" aria-label="Edit entry">✏️</button><button onclick="del(${x.id})" aria-label="Delete entry">🗑</button></span>`:''}</div>`;
+const txRow=(x,d)=>`<div class="tx${x.id===hlId?' hl':''}" id="e${x.id}"><div><b>${esc(x.cat)}${x.sub?' › '+esc(x.sub):''}</b><small>${x.date}${x.time?' '+x.time:''}${x.who?' · 👤 '+esc(x.who):''}${x.note?' · '+esc(x.note):''}</small></div><b class=${x.type==='income'?'inc':'exp'}>${x.type==='income'?'+':'−'}${fmt(x.amt)}</b>${d?`<span style="display:flex;flex-direction:column"><button onclick="editTx(${x.id})" aria-label="Edit entry">✏️</button><button onclick="del(${x.id})" aria-label="Delete entry">🗑</button></span>`:''}</div>`;
 const num=v=>+String(v).replace(/,/g,'')||0;
 const fmt=n=>S.cur+' '+(+n).toLocaleString('en-US',{maximumFractionDigits:S.cur==='UGX'?0:2});
 const esc=s=>String(s).replace(/[&<>"']/g,c=>'&#'+c.charCodeAt(0)+';');
@@ -199,6 +205,7 @@ add(){return `<div class=card><h3 id=ah hidden></h3><div class=seg><button id=bE
  <label>Amount (${S.cur})<input id=amt inputmode=decimal placeholder="0" oninput="cm(this)"></label>
  <label>Category<select id=cat onchange="subs()"></select></label>
  <label id=sl hidden><span id=sll></span><select id=sub></select></label>
+ <label id=wl hidden><span>This payment is for</span><select id=who></select></label>
  <div class=row><label>Date<input id=date type=date value="${today()}"></label><label>Time<input id=time type=time value="${nowT()}"></label></div>
  <label>Note (optional)<input id=note maxlength=80 placeholder="e.g. Vegetables at the market"></label>
  <button class=btn id=ab onclick="addTx()">Save entry</button><button class="btn ghost" id=ax hidden onclick="go('history')">Cancel editing</button><p id=msg class=mut></p></div>`},
@@ -213,8 +220,9 @@ budgets(){const bi=(k,t)=>`<label>${esc(t)}<input data-k="${esc(k)}" inputmode=d
  ${S.cats.expense.map(c=>bi(c,c)+(S.subs[c]||[]).map(u=>bi(c+' › '+u,'↳ '+c+' › '+u+(EX[u]?' ('+EX[u]+')':''))).join('')).join('')}</div>
  <div class=card><h3>Add your own category</h3><label>Name<input id=nc maxlength=24 placeholder="e.g. Church giving"></label>
  <div class=row><button class=btn onclick="addCat('expense')">Add expense</button><button class="btn ghost" onclick="addCat('income')">Add income</button></div></div>
- <div class=card><h3>Add an item to a category</h3><p class=mut>Examples: another child under School Fees, or a new job under Agric. It also gets its own budget box above.</p>
- <label>Category<select id=sc>${opts(S.cats.expense,'School Fees')}</select></label><label>Item name<input id=sn maxlength=30 placeholder="e.g. Hauwa Juma"></label><button class=btn onclick="addSub()">Add item</button></div>`},
+ <div class=card><h3>Add an item to a category</h3><p class=mut>Example: a new kind of food under Food &amp; Groceries. It also gets its own budget box above.</p>
+ <label>Category<select id=sc>${opts(S.cats.expense,'Food & Groceries')}</select></label><label>Item name<input id=sn maxlength=30 placeholder="e.g. Hauwa Juma"></label><button class=btn onclick="addSub()">Add item</button></div>
+ <div class=card><h3>Add a child or person for Education</h3><p class=mut>The name is added to the "This payment is for" list when you pick Education.</p><label>Name<input id=wn maxlength=30 placeholder="e.g. Hauwa Juma"></label><button class=btn onclick="addWho()">Add name</button></div>`},
 journal(){return `<div class=card><h3 id=jh>📓 New journal note</h3>
  <div class=row><label>Date<input id=jd type=date value="${today()}"></label><label>Time<input id=jt type=time value="${nowT()}"></label></div>
  <label>About<select id=jc onchange="jsubs()">${opts([['','General'],...[...new Set([...S.cats.expense,...S.cats.income])]])}</select></label>
@@ -246,19 +254,21 @@ function render(){jedit=null;if(tab!=='add')tedit=null;$('#month').value=month;
  if(tab==='add'){setType(addType);if(tedit)fillEdit()}if(tab==='history')drawHist();if(tab==='ai')drawChat();if(tab==='journal'){jsubs();drawJ()}}
 const go=t=>{tab=t;render();scrollTo(0,0)};
 const msg=t=>{$('#msg').textContent=t};
-function subs(){const c=$('#cat').value,l=S.subs[c];$('#sl').hidden=addType!=='expense'||!l;$('#sll').textContent=subLbl(c);$('#sub').innerHTML=opts(sOpts(l||[]))}
+function subs(){const c=$('#cat').value,l=S.subs[c],w=S.who[c];$('#sl').hidden=addType!=='expense'||!l;$('#sll').textContent=subLbl(c);$('#sub').innerHTML=opts(sOpts(l||[]));$('#wl').hidden=addType!=='expense'||!w;$('#who').innerHTML=opts(w||[])}
 function setType(t){addType=t;$('#bE').classList.toggle('on',t==='expense');$('#bI').classList.toggle('on',t==='income');$('#cat').innerHTML=opts(S.cats[t]);subs()}
 function addTx(){const a=num($('#amt').value);if(!(a>0))return msg('Please type an amount above 0.');const c=$('#cat').value,
- o={type:addType,amt:a,cat:c,sub:addType==='expense'&&S.subs[c]?$('#sub').value:'',date:$('#date').value||today(),time:$('#time').value||nowT(),note:$('#note').value.trim()};
+ o={type:addType,amt:a,cat:c,sub:addType==='expense'&&S.subs[c]?$('#sub').value:'',who:addType==='expense'&&S.who[c]?$('#who').value:'',date:$('#date').value||today(),time:$('#time').value||nowT(),note:$('#note').value.trim()};
  if(tedit){const x=S.tx.find(t=>t.id===tedit),id=tedit;if(x)Object.assign(x,o);save();tedit=null;return openEntry(id)}
  S.tx.push({id:Date.now(),...o});save();$('#amt').value=$('#note').value='';$('#time').value=nowT();msg('Saved ✔ You can add another entry.')}
 function editTx(id){const x=S.tx.find(t=>t.id===id);if(!x)return;tedit=id;addType=x.type;go('add')}
+function ensure(id,v){const e=$(id);if(v&&![...(e.options||[])].some(o=>o.value===v))e.innerHTML+=`<option>${esc(v)}</option>`;e.value=v||''}
 function fillEdit(){const x=S.tx.find(t=>t.id===tedit);if(!x){tedit=null;return}
- $('#amt').value=x.amt.toLocaleString('en-US',{maximumFractionDigits:2});$('#cat').value=x.cat;subs();$('#sub').value=x.sub||'';
+ $('#amt').value=x.amt.toLocaleString('en-US',{maximumFractionDigits:2});ensure('#cat',x.cat);subs();ensure('#sub',x.sub);ensure('#who',x.who);
  $('#date').value=x.date;$('#time').value=x.time||'';$('#note').value=x.note||'';
  $('#ah').hidden=false;$('#ah').textContent='✏️ Edit entry';$('#ab').textContent='Update entry';$('#ax').hidden=false}
+function addWho(){const n=$('#wn').value.trim();if(!n)return;const l=S.who.Education=S.who.Education||[];if(!l.includes(n)){const i=l.indexOf('Others');i<0?l.push(n):l.splice(i,0,n);save()}render()}
 function drawHist(){if(hv==='sum')return drawSum();const k=hq.toLowerCase(),k2=k.replace(/,/g,'');
- const t=(per==='all'?S.tx:mtx()).filter(x=>{const h=[x.cat,x.sub,x.note,x.amt,x.date].join(' ').toLowerCase();return(flt==='all'||x.type===flt)&&(!fcat||x.cat===fcat)&&(!k||h.includes(k)||h.includes(k2))}).sort(byNew);
+ const t=(per==='all'?S.tx:mtx()).filter(x=>{const h=[x.cat,x.sub,x.who,x.note,x.amt,x.date].join(' ').toLowerCase();return(flt==='all'||x.type===flt)&&(!fcat||x.cat===fcat)&&(!k||h.includes(k)||h.includes(k2))}).sort(byNew);
  $('#hl').innerHTML=`<div class=card><p class=mut>${t.length} entries · In ${fmt(sum(t,'income'))} · Out ${fmt(sum(t,'expense'))}</p>`+(t.length?t.map(x=>txRow(x,1)).join(''):'<p class=mut>No entries found.</p>')+'</div>'}
 function drawSum(){const g={},lab=k=>sp==='month'?new Date(k+'-01T00:00:00').toLocaleDateString('en-GB',{month:'long',year:'numeric'}):sp==='week'?'Week: '+fd(k).replace(/ \d{4}$/,'')+' – '+fd(ad(k,6)):fd(k);
  S.tx.forEach(x=>{const k=sp==='day'?x.date:sp==='week'?wk(x.date):x.date.slice(0,7),r=g[k]||(g[k]={i:0,o:0,n:0});r[x.type==='income'?'i':'o']+=x.amt;r.n++});
@@ -297,9 +307,9 @@ function addCat(k){const n=$('#nc').value.trim();if(!n)return;if(!S.cats[k].incl
 
 // ---- Assistant (works offline, uses your own records) ----
 function answer(q){const s=st(),l=q.toLowerCase(),f=fmt,pc=(a,b)=>b?Math.round(a/b*100)+'%':'0%';
- const names=[...S.cats.expense,...S.cats.income,...Object.values(S.subs).flat()].filter(n=>n!=='Other').sort((a,b)=>b.length-a.length);
+ const names=[...S.cats.expense,...S.cats.income,...Object.values(S.subs).flat(),...Object.values(S.who).flat()].filter(n=>n!=='Other'&&n!=='Others').sort((a,b)=>b.length-a.length);
  const c=names.find(n=>new RegExp('\\b'+rx(n.toLowerCase().split(' (')[0].replace(/s$/,''))+'s?\\b').test(l));
- if(c){const m=s.t.filter(x=>x.cat===c||x.sub===c),o=sum(m,'expense'),i=sum(m,'income');
+ if(c){const m=s.t.filter(x=>x.cat===c||x.sub===c||x.who===c),o=sum(m,'expense'),i=sum(m,'income');
   return m.length?`${c} in ${month}: ${m.length} entries.`+(o?`\nSpent: ${f(o)} (${pc(o,s.exp)} of all spending)`:'')+(i?`\nReceived: ${f(i)}`:''):`No entries for ${c} in ${month}.`}
  if(/today/.test(l)){const d=s.t.filter(x=>x.date===today());return `Today: spent ${f(sum(d,'expense'))}, received ${f(sum(d,'income'))} (${d.length} entries).`}
  if(/forecast|predict|end of|project/.test(l)){const p=s.exp/s.now*s.days;
@@ -341,7 +351,7 @@ function report(){const s=st(),L=[],p=(a,n)=>String(a).slice(0,n).padEnd(n),r=(a
  L.push('PERSONAL BUDGET REPORT - '+month,'Created: '+today()+' '+nowT()+'    Currency: '+S.cur,'='.repeat(90),'Income:   '+fmt(s.inc),'Expenses: '+fmt(s.exp),'Balance:  '+fmt(s.inc-s.exp),'Budget:   '+(s.tb?fmt(s.tb):'not set'),'','SPENDING BY CATEGORY',p('Category',34)+r('Spent',20)+r('Limit',20),'-'.repeat(74));
  s.rows.forEach(x=>L.push(p(x.n,34)+r(fmt(x.sp),20)+r(x.l?fmt(x.l):'-',20)));
  L.push('','TRANSACTIONS',p('Date',10)+' '+p('Time',5)+' '+p('',3)+' '+p('Category / item',24)+r('Amount',16)+' Note','-'.repeat(90));
- s.t.forEach(x=>L.push(p(x.date,10)+' '+p(x.time||'',5)+' '+p(x.type==='income'?'IN':'OUT',3)+' '+p(x.cat+(x.sub?' > '+x.sub:''),24)+r(fmt(x.amt),16)+' '+(x.note||'').slice(0,28)));
+ s.t.forEach(x=>L.push(p(x.date,10)+' '+p(x.time||'',5)+' '+p(x.type==='income'?'IN':'OUT',3)+' '+p(x.cat+(x.sub?' > '+x.sub:''),24)+r(fmt(x.amt),16)+' '+((x.who?'['+x.who+'] ':'')+(x.note||'')).slice(0,28)));
  if(!s.t.length)L.push('No entries this month.');return L}
 function mkPdf(lines){const per=60,pages=[];for(let i=0;i<lines.length;i+=per)pages.push(lines.slice(i,i+per));
  const o=[];o[1]='<</Type/Catalog/Pages 2 0 R>>';o[2]=`<</Type/Pages/Kids[${pages.map((_,i)=>(4+i*2)+' 0 R').join(' ')}]/Count ${pages.length}>>`;o[3]='<</Type/Font/Subtype/Type1/BaseFont/Courier>>';
