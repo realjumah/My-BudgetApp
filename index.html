@@ -82,12 +82,48 @@ const K='budget-pwa-v1',$=s=>document.querySelector(s),pad2=n=>String(n).padStar
 const today=()=>{const d=new Date();return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate())};
 const nowT=()=>{const d=new Date();return pad2(d.getHours())+':'+pad2(d.getMinutes())};
 const DEF={cur:'UGX',tx:[],budgets:{},journal:[],
- cats:{expense:['Food','Transport','Rent','Airtime & Data','Health','School Fees','Business','Savings','Entertainment','Sadaqa','Contributions','Debt Payment','Saloon','Agric','Other'],
- income:['Salary','Business','Farming','Gifts/Donations','Accounts Receivable (Debtors)','Savings','Other']},
- subs:{Agric:['Buying seeds','Buying drugs','Feeds','Fungicides/insecticides','Buying livestock/poultry','Ploughing','Weeding','Harvesting','Other'],
- 'School Fees':['Awwal Juma','Akbar Juma','Maira Juma','Other']}};
+ cats:{expense:[
+ 'Housing & Accommodation','Food & Groceries','Transport','Utilities & Communication','Electronics & Technology',
+ 'Education','Clothing','Healthcare','Household Supplies',
+ 'Personal Care & Development','Family Responsibilities','Islamic Obligations & Charity',
+ 'Social Obligations','Debt Repayment','Savings & Emergency Fund',
+ 'Investments & Wealth Creation','Recreation & Entertainment','Miscellaneous & Unexpected'
+ ],
+ income:[
+ 'Salary/Wages','Business Withdrawal','Project/Field Allowance','Farming & Livestock',
+ 'Casual Work','Rental Income','Gifts/Family Support','Refunds/Reimbursements','Other Income'
+ ]},
+ subs:{
+ 'Food & Groceries':['Posho & maize flour','Cassava flour & millet','Beans & rice','Cooking oil & essentials','Meat, fish & eggs','Vegetables & fruits','Milk, bread & snacks','Assorted food','Eating out','Other'],
+ 'Transport':['Boda boda','Taxi & bus fares','Fuel','Vehicle repairs','Parking','Long-distance travel','Other'],
+ 'Utilities & Communication':['Electricity','Water','Charcoal/firewood/gas','Airtime','Internet bundles','Mobile money charges','Other'],
+ 'Education':['School fees','Uniforms & shoes','Books & stationery','Tour fees','School transport','Madrasa','Other'],
+ 'Clothing':['Adult clothing','Children clothing','Shoes','Work clothes','Islamic clothing','Tailoring & repairs','Other'],
+ 'Healthcare':['Clinic & hospital','Medicines','Dental care','Eye care','Laboratory tests','Emergency treatment','Other'],
+ 'Household Supplies':['Soap & detergents','Toilet paper & toiletries','Cleaning materials','Cooking utensils','Bedding & towels','Cosmetics','Deodorants','Other'],
+ 'Personal Care & Development':['Haircuts & grooming','Gym & fitness','Books','Online courses','Professional training','Computer/software','Other'],
+ 'Family Responsibilities':['Household support','Childcare','Relatives support','Family visits','Family emergencies','Other'],
+ 'Islamic Obligations & Charity':['Zakat','Sadaqah','Mosque contributions','Zakatul Fitr','Ramadan expenses','Eid celebrations','Support to needy people','Other'],
+ 'Social Obligations':['Weddings','Funerals & burial contributions','Community contributions','Visitors & hospitality','Traditional family obligations','Other'],
+ 'Debt Repayment':['Personal loan','SACCO loan','VSLA loans','Telecom loans','Other debt','Other'],
+ 'Savings & Emergency Fund':['Emergency fund','School fees savings','Medical savings','House construction savings','Family future savings','Other'],
+ 'Investments & Wealth Creation':['Land','Livestock','Agriculture','Long-term investment','Income-generating project','Retirement savings','Other'],
+ 'Recreation & Entertainment':['Family outings','Sports & hobbies','Subscriptions','Holiday trips','Personal leisure','Other'],
+ 'Housing & Accommodation':['Rent','House construction','Repairs & maintenance','Compound cleaning','Security','Furniture & improvements','Other'],
+ 'Miscellaneous & Unexpected':['Unexpected travel','Emergency repairs','Unplanned family needs','Other'],
+ 'Electronics & Technology':['Phones','Computers & laptops','Computer accessories','Phone accessories','Laptop repairs','Phone repairs','Software & applications','Internet equipment','Other electronics'],
+ 'Agric':['Buying seeds','Buying drugs','Feeds','Fungicides/insecticides','Buying livestock/poultry','Ploughing','Weeding','Harvesting','Other'],
+ 'School Fees':['Awwal Juma','Akbar Juma','Maira Juma','Other']
+ }};
 // Adds any new categories to data saved earlier, so old entries are kept
 const norm=d=>{const s=Object.assign(structuredClone(DEF),d||{});
+ // "Education & Children" is now "Education"; "Examination fees" is now "Tour fees" (old entries keep their labels)
+ const O='Education & Children',N='Education';
+ s.cats.expense=[...new Set(s.cats.expense.map(c=>c===O?N:c))];
+ if(s.subs[O]){s.subs[N]=[...new Set([...(s.subs[N]||[]),...s.subs[O]])];delete s.subs[O]}
+ if(s.subs[N])s.subs[N]=s.subs[N].map(u=>u==='Examination fees'?'Tour fees':u).filter((u,i,a)=>a.indexOf(u)===i);
+ s.tx.forEach(t=>{if(t.cat===O)t.cat=N});(s.journal||[]).forEach(j=>{if(j.topic===O)j.topic=N});
+ for(const k of Object.keys(s.budgets))if(k===O||k.startsWith(O+' › ')){s.budgets[N+k.slice(O.length)]=s.budgets[k];delete s.budgets[k]}
  for(const k in DEF.cats)DEF.cats[k].forEach(c=>s.cats[k].includes(c)||s.cats[k].push(c));
  s.cats.income=s.cats.income.filter(c=>c!=='Gift');
  s.tx.forEach(t=>{if(t.type==='income'&&t.cat==='Gift')t.cat='Gifts/Donations'});
@@ -102,6 +138,8 @@ const save=()=>{localStorage.setItem(K,JSON.stringify(S));if(G.on){G.d=1;saveG()
 const ad=(d,n)=>{const x=new Date(d+'T00:00:00');x.setDate(x.getDate()+n);return x.getFullYear()+'-'+pad2(x.getMonth()+1)+'-'+pad2(x.getDate())};
 const wk=d=>ad(d,-((new Date(d+'T00:00:00').getDay()+6)%7));
 const fd=d=>new Date(d+'T00:00:00').toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short',year:'numeric'});
+const EX={'Phones':'smartphone purchases','Computers & laptops':'new laptop or desktop','Computer accessories':'mouse, keyboard, flash disk, charger','Phone accessories':'phone cover, screen protector, earphones','Laptop repairs':'screen, keyboard, motherboard repairs','Phone repairs':'screen or battery replacement','Software & applications':'paid software, subscriptions','Internet equipment':'router, modem, MiFi','Other electronics':'other electronic devices','Telecom loans':'e.g. MoMo loans'};
+const sOpts=l=>l.map(u=>EX[u]?[u,u+' ('+EX[u]+')']:u);
 const subLbl=c=>c==='School Fees'?'Child (who is the fee for?)':'Item (what is it for?)';
 const goAdd=t=>{tedit=null;addType=t;go('add')};
 const txRow=(x,d)=>`<div class="tx${x.id===hlId?' hl':''}" id="e${x.id}"><div><b>${esc(x.cat)}${x.sub?' › '+esc(x.sub):''}</b><small>${x.date}${x.time?' '+x.time:''}${x.note?' · '+esc(x.note):''}</small></div><b class=${x.type==='income'?'inc':'exp'}>${x.type==='income'?'+':'−'}${fmt(x.amt)}</b>${d?`<span style="display:flex;flex-direction:column"><button onclick="editTx(${x.id})" aria-label="Edit entry">✏️</button><button onclick="del(${x.id})" aria-label="Delete entry">🗑</button></span>`:''}</div>`;
@@ -148,7 +186,8 @@ home(){const s=st(),T=today(),W=wk(T),at=S.tx,[my,mm]=month.split('-'),xs=f=>sum
  <div class=pills style="margin-top:12px"><div>▲ Income<b>${fmt(s.inc)}</b></div><div>▼ Expenses<b>${fmt(s.exp)}</b></div></div></div>
  <div class=qa><button onclick="goAdd('expense')"><span>➖</span>Expense</button><button onclick="goAdd('income')"><span>➕</span>Income</button><button onclick="calc(1)"><span>🧮</span>Calculator</button><button onclick="doPdf(0)"><span>📄</span>PDF</button></div>
  <div class=kp><div><small>Spent today</small><b class=exp>${fmt(xs(x=>x.date===T))}</b></div><div><small>Spent this week</small><b class=exp>${fmt(xs(x=>x.date>=W&&x.date<=T))}</b></div>
- <div><small>Average per day</small><b>${fmt(s.exp/s.now)}</b></div><div><small>Kept from income</small><b class=inc>${s.inc?Math.round((s.inc-s.exp)/s.inc*100)+'%':'—'}</b></div></div>
+ <div><small>Income this week</small><b class=inc>${fmt(sum(at.filter(x=>x.date>=W&&x.date<=T),'income'))}</b></div><div><small>Weekly balance</small><b class="${sum(at.filter(x=>x.date>=W&&x.date<=T),'income')-xs(x=>x.date>=W&&x.date<=T)<0?'exp':'inc'}">${fmt(sum(at.filter(x=>x.date>=W&&x.date<=T),'income')-xs(x=>x.date>=W&&x.date<=T))}</b></div>
+ <div><small>Average daily spending (month)</small><b>${fmt(s.exp/s.now)}</b></div><div><small>Kept from income (month)</small><b class=inc>${s.inc?Math.round((s.inc-s.exp)/s.inc*100)+'%':'—'}</b></div></div>
  <div class=card><h3>💡 Today's tips</h3>${tips(s).map(([ic,n,c,t])=>`<div style="border-left:4px solid ${c};padding:2px 10px;margin:10px 0"><small class=mut>${ic} ${n}</small><div>${esc(t)}</div></div>`).join('')}<p class=mut style="margin-bottom:0">New tips every day.</p></div>
  <div class=card><h3>🎯 Budget</h3><div class=flex><svg viewBox="0 0 100 100" width=110 height=110><circle cx=50 cy=50 r=42 fill=none stroke="var(--bd)" stroke-width=10 /><circle cx=50 cy=50 r=42 fill=none stroke="${col}" stroke-width=10 stroke-linecap=round stroke-dasharray="${Math.min(1,pct)*C} ${C}" transform="rotate(-90 50 50)"/><text x=50 y=56 text-anchor=middle font-size=20 font-weight=700 fill=currentColor>${Math.round(pct*100)}%</text></svg>
  <div class=leg>${s.tb?`<div><span>Budget</span><b>${fmt(s.tb)}</b></div><div><span>Spent</span><b class=exp>${fmt(s.exp)}</b></div><div><span>${s.tb>=s.exp?'Left':'Over by'}</span><b class="${s.tb>=s.exp?'inc':'exp'}">${fmt(Math.abs(s.tb-s.exp))}</b></div>`:'<span class=mut>No budget yet. Open Budgets and set a limit for each category.</span>'}</div></div></div>
@@ -170,8 +209,8 @@ history(){const tg=`<div class=seg style="margin-bottom:12px"><button class="${h
  <select onchange="fcat=this.value;drawHist()">${opts([['','All categories'],...[...new Set([...S.cats.expense,...S.cats.income])]],fcat)}</select></div>
  <select onchange="per=this.value;drawHist()">${opts([['month','Month shown at top'],['all','All time']],per)}</select></div>`)+'<div id=hl></div>'+PB},
 budgets(){const bi=(k,t)=>`<label>${esc(t)}<input data-k="${esc(k)}" inputmode=decimal value="${S.budgets[k]?(+S.budgets[k]).toLocaleString('en-US'):''}" oninput="cm(this)" onchange="setB(this)"></label>`;
- return `<div class=card><h3>Monthly limits</h3><p class=mut>Type the most you plan to spend each month. Leave empty for no limit. For Agric, set one limit for all of it, or leave it empty and set a limit for each Agric item.</p>
- ${S.cats.expense.map(c=>bi(c,c)+(S.subs[c]||[]).map(u=>bi(c+' › '+u,'↳ '+c+' › '+u)).join('')).join('')}</div>
+ return `<div class=card><h3>Monthly limits</h3><p class=mut>Set a monthly spending limit for each category. Your home screen tracks this week's income and spending, while History → Summary gives daily, weekly and monthly totals. Leave a limit empty if you do not need one.</p>
+ ${S.cats.expense.map(c=>bi(c,c)+(S.subs[c]||[]).map(u=>bi(c+' › '+u,'↳ '+c+' › '+u+(EX[u]?' ('+EX[u]+')':''))).join('')).join('')}</div>
  <div class=card><h3>Add your own category</h3><label>Name<input id=nc maxlength=24 placeholder="e.g. Church giving"></label>
  <div class=row><button class=btn onclick="addCat('expense')">Add expense</button><button class="btn ghost" onclick="addCat('income')">Add income</button></div></div>
  <div class=card><h3>Add an item to a category</h3><p class=mut>Examples: another child under School Fees, or a new job under Agric. It also gets its own budget box above.</p>
@@ -207,7 +246,7 @@ function render(){jedit=null;if(tab!=='add')tedit=null;$('#month').value=month;
  if(tab==='add'){setType(addType);if(tedit)fillEdit()}if(tab==='history')drawHist();if(tab==='ai')drawChat();if(tab==='journal'){jsubs();drawJ()}}
 const go=t=>{tab=t;render();scrollTo(0,0)};
 const msg=t=>{$('#msg').textContent=t};
-function subs(){const c=$('#cat').value,l=S.subs[c];$('#sl').hidden=addType!=='expense'||!l;$('#sll').textContent=subLbl(c);$('#sub').innerHTML=opts(l||[])}
+function subs(){const c=$('#cat').value,l=S.subs[c];$('#sl').hidden=addType!=='expense'||!l;$('#sll').textContent=subLbl(c);$('#sub').innerHTML=opts(sOpts(l||[]))}
 function setType(t){addType=t;$('#bE').classList.toggle('on',t==='expense');$('#bI').classList.toggle('on',t==='income');$('#cat').innerHTML=opts(S.cats[t]);subs()}
 function addTx(){const a=num($('#amt').value);if(!(a>0))return msg('Please type an amount above 0.');const c=$('#cat').value,
  o={type:addType,amt:a,cat:c,sub:addType==='expense'&&S.subs[c]?$('#sub').value:'',date:$('#date').value||today(),time:$('#time').value||nowT(),note:$('#note').value.trim()};
@@ -227,7 +266,7 @@ function drawSum(){const g={},lab=k=>sp==='month'?new Date(k+'-01T00:00:00').toL
  $('#hl').innerHTML=ks.length?ks.map(k=>{const r=g[k],net=r.i-r.o;return `<div class=card style="padding:10px 14px;margin-bottom:8px"><div class=tx style="border:0;padding:0"><div><b>${lab(k)}</b><small>${r.n} entries</small></div><div style="text-align:right;font-size:14px"><span class=inc>+${fmt(r.i)}</span><br><span class=exp>−${fmt(r.o)}</span><br><b style="color:${net<0?'var(--exp)':'var(--inc)'}">Net ${net<0?'−':''}${fmt(Math.abs(net))}</b></div></div></div>`}).join(''):'<p class=mut>No entries yet.</p>'}
 function addSub(){const c=$('#sc').value,n=$('#sn').value.trim();if(!n)return;const l=S.subs[c]=S.subs[c]||[];if(!l.includes(n)){const i=l.indexOf('Other');i<0?l.push(n):l.splice(i,0,n);save()}render()}
 // ---- Journal ----
-function jsubs(){const c=$('#jc').value,l=S.subs[c];$('#jsl').hidden=!l;$('#jsll').textContent=subLbl(c);$('#js').innerHTML=opts([['','—'],...(l||[])])}
+function jsubs(){const c=$('#jc').value,l=S.subs[c];$('#jsl').hidden=!l;$('#jsll').textContent=subLbl(c);$('#js').innerHTML=opts([['','—'],...sOpts(l||[])])}
 function addNote(){const t=$('#jn').value.trim();if(!t)return dlg('Please write something first.');const c=$('#jc').value,
  o={date:$('#jd').value||today(),time:$('#jt').value||nowT(),topic:c,sub:S.subs[c]?$('#js').value:'',text:t};
  if(jedit){const n=S.journal.find(x=>x.id===jedit);if(n)Object.assign(n,o);resetJ()}else S.journal.push({id:Date.now(),...o});
@@ -299,7 +338,7 @@ function useCalc(){const r=ev(),v=r!==null?r:num(ex);if(!(v>0))return;go('add');
 
 // ---- PDF (built inside the app, no internet needed) ----
 function report(){const s=st(),L=[],p=(a,n)=>String(a).slice(0,n).padEnd(n),r=(a,n)=>String(a).slice(0,n).padStart(n);
- L.push('MY BUDGET REPORT - '+month,'Created: '+today()+' '+nowT()+'    Currency: '+S.cur,'='.repeat(90),'Income:   '+fmt(s.inc),'Expenses: '+fmt(s.exp),'Balance:  '+fmt(s.inc-s.exp),'Budget:   '+(s.tb?fmt(s.tb):'not set'),'','SPENDING BY CATEGORY',p('Category',34)+r('Spent',20)+r('Limit',20),'-'.repeat(74));
+ L.push('PERSONAL BUDGET REPORT - '+month,'Created: '+today()+' '+nowT()+'    Currency: '+S.cur,'='.repeat(90),'Income:   '+fmt(s.inc),'Expenses: '+fmt(s.exp),'Balance:  '+fmt(s.inc-s.exp),'Budget:   '+(s.tb?fmt(s.tb):'not set'),'','SPENDING BY CATEGORY',p('Category',34)+r('Spent',20)+r('Limit',20),'-'.repeat(74));
  s.rows.forEach(x=>L.push(p(x.n,34)+r(fmt(x.sp),20)+r(x.l?fmt(x.l):'-',20)));
  L.push('','TRANSACTIONS',p('Date',10)+' '+p('Time',5)+' '+p('',3)+' '+p('Category / item',24)+r('Amount',16)+' Note','-'.repeat(90));
  s.t.forEach(x=>L.push(p(x.date,10)+' '+p(x.time||'',5)+' '+p(x.type==='income'?'IN':'OUT',3)+' '+p(x.cat+(x.sub?' > '+x.sub:''),24)+r(fmt(x.amt),16)+' '+(x.note||'').slice(0,28)));
